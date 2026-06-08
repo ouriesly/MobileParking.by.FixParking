@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPMS — Mobile Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+  html, body {
+    width:100%; height:100%;
+    overflow:hidden;
+    background: #ffffff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'DM Sans',sans-serif;
+  }
+
+  .blob { display:none; }
+
+  /* ── PHONE ── */
+  .phone-outer { position:relative; z-index:1; flex-shrink:0; }
+
+  .phone-outer::before { display:none; }
+
+  .phone-body {
+    width:100%; height:100%;
+    border-radius:54px;
+    background:linear-gradient(168deg,#252527 0%,#181819 45%,#0e0e0f 100%);
+    border:1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+    position:relative;
+  }
+
+  /* Buttons */
+  .phone-body::before {
+    content:'';
+    position:absolute; left:-4px; top:20%;
+    width:4px; height:7%;
+    background:linear-gradient(180deg,#2e2e32,#1c1c1e);
+    border-radius:2px 0 0 2px;
+    box-shadow:0 calc(100% + 10px) 0 #252528, 0 calc(200% + 20px) 0 #252528, inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+  .phone-body::after {
+    content:'';
+    position:absolute; right:-4px; top:25%;
+    width:4px; height:12%;
+    background:linear-gradient(180deg,#2e2e32,#1c1c1e);
+    border-radius:0 2px 2px 0;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.07);
+  }
+
+  .phone-screen {
+    position:absolute;
+    top:1.4%; left:1.4%; right:1.4%; bottom:1.4%;
+    border-radius:46px;
+    overflow:hidden;
+    background:#000;
+  }
+
+  .phone-display {
+    position:absolute; inset:0;
+    border-radius:46px;
+    overflow:hidden;
+    background:#f2f5f9;
+  }
+
+  /* Dynamic Island */
+  .di {
+    position:absolute; top:1.5%; left:50%; transform:translateX(-50%);
+    width:35%; height:4.5%;
+    background:#000; border-radius:30px; z-index:30;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 15%;
+    box-shadow:0 3px 14px rgba(0,0,0,0.75), inset 0 -1px 0 rgba(255,255,255,0.03);
+  }
+  .di-spk { width:44%; height:33%; background:#1a1a1c; border-radius:10px; }
+  .di-cam { width:15%; aspect-ratio:1; border-radius:50%; background:#0d0d0e; border:2px solid #222; box-shadow:0 0 8px rgba(26,111,204,0.4); }
+
+  /* Status bar */
+  .sb {
+    position:absolute; top:0; left:0; right:0; height:8%;
+    z-index:20; display:flex; align-items:flex-end;
+    padding:0 8% 1.5%; justify-content:space-between;
+    pointer-events:none;
+    background:linear-gradient(180deg,rgba(242,245,249,1) 65%,rgba(242,245,249,0) 100%);
+    border-radius:46px 46px 0 0;
+  }
+  .sb-t { font-size:clamp(10px,2vw,14px); font-weight:700; color:#0F1923; letter-spacing:-.4px; }
+  .sb-i { display:flex; align-items:center; gap:5px; }
+  .sig { display:flex; align-items:flex-end; gap:1.5px; height:11px; }
+  .sig span { width:3px; border-radius:1.5px 1.5px 0 0; background:#0F1923; }
+  .sig span:nth-child(1){height:28%}.sig span:nth-child(2){height:50%}.sig span:nth-child(3){height:73%}.sig span:nth-child(4){height:100%}
+  .bt { display:flex; align-items:center; gap:1px; }
+  .bt-b { width:22px;height:11px; border-radius:2.5px; border:1.5px solid rgba(15,25,35,0.5); position:relative; overflow:hidden; }
+  .bt-f { position:absolute; inset:1.5px; right:25%; border-radius:1px; background:#2E7D32; }
+  .bt-t { width:2px;height:5px; background:rgba(15,25,35,0.45); border-radius:0 1px 1px 0; }
+
+  /* Iframe area */
+  .iw {
+    position:absolute; top:8%; left:0; right:0; bottom:0;
+    overflow:hidden;
+    border-radius:0 0 46px 46px;
+  }
+  .iw iframe {
+    border:none; transform-origin:top left;
+    position:absolute; top:0; left:0;
+  }
+
+  /* Home bar */
+  .hb {
+    position:absolute; bottom:1%; left:50%; transform:translateX(-50%);
+    width:30%; height:5px;
+    background:rgba(15,25,35,0.2); border-radius:3px; z-index:25;
+  }
+
+  /* Sheen */
+  .sheen {
+    position:absolute; inset:0;
+    background:linear-gradient(155deg,rgba(255,255,255,0.065) 0%,rgba(255,255,255,0.02) 28%,transparent 52%);
+    border-radius:46px; pointer-events:none; z-index:35;
+  }
+
+  .fshadow { display:none; }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="phone-outer" id="po">
+  <div class="phone-body">
+    <div class="phone-screen">
+      <div class="phone-display">
+
+        <div class="sb">
+          <div class="sb-t" id="clock">09:41</div>
+          <div class="sb-i">
+            <div class="sig"><span></span><span></span><span></span><span></span></div>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+              <path d="M1 5 Q8 -1 15 5" stroke="#0F1923" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <path d="M3.5 7.5 Q8 3.5 12.5 7.5" stroke="#0F1923" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <circle cx="8" cy="10.5" r="1.2" fill="#0F1923"/>
+            </svg>
+            <div class="bt"><div class="bt-b"><div class="bt-f"></div></div><div class="bt-t"></div></div>
+          </div>
+        </div>
+
+        <div class="di"><div class="di-spk"></div><div class="di-cam"></div></div>
+
+        <div class="iw" id="iw">
+          <iframe id="fr" srcdoc="<!DOCTYPE html>
+<html lang=&quot;id&quot;>
+<head>
+<meta charset=&quot;UTF-8&quot;>
+<meta name=&quot;viewport&quot; content=&quot;width=390, initial-scale=1.0&quot;>
+<title>HPMS — Hospital Parking Management System</title>
+<link rel=&quot;preconnect&quot; href=&quot;https://fonts.googleapis.com&quot;>
+<link rel=&quot;preconnect&quot; href=&quot;https://fonts.gstatic.com&quot; crossorigin>
+<link href=&quot;https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&amp;family=DM+Mono:wght@400;500&amp;display=swap&quot; rel=&quot;stylesheet&quot;>
+<link rel=&quot;stylesheet&quot; href=&quot;https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css&quot;>
+<style>
+:root {
+  --blue:#1A6FCC; --blue-dk:#0D4E99; --blue-lt:#E8F2FD; --blue-md:#B8D5F8;
+  --green:#2E7D32; --green-lt:#E8F5E9;
+  --amber:#8B5000; --amber-lt:#FFF3E0;
+  --red:#C62828; --red-lt:#FFEBEE;
+  --teal:#00695C; --teal-lt:#E0F2F1;
+  --text:#0F1923; --text-2:#5C6E7F; --text-3:#94A3B3;
+  --bg:#F2F5F9; --bg-card:#FFFFFF;
+  --border:#DDE4EE; --border-lt:#EEF2F7;
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --radius:10px; --radius-sm:6px;
+  font-family:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ───── SCREEN SWITCHER ───── */
+.screen{display:none}
+.screen.active{display:flex;height:100vh}
+
+/* ───── LOGIN ───── */
+#screen-login{
+  background:linear-gradient(135deg,#0D4E99 0%,#1A6FCC 50%,#0891b2 100%);
+  align-items:center;justify-content:center;flex-direction:column;gap:0;
+}
+.login-card{
+  background:#fff;border-radius:16px;padding:40px 44px;
+  width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.18);
+}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.login-logo-icon{
+  width:44px;height:44px;background:var(--blue);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;
+}
+.login-logo-text .brand{font-size:18px;font-weight:600;letter-spacing:-.3px}
+.login-logo-text .sub{font-size:11px;color:var(--text-3)}
+.login-title{font-size:20px;font-weight:600;margin-bottom:4px;letter-spacing:-.3px}
+.login-sub{font-size:13px;color:var(--text-2);margin-bottom:24px}
+.login-form-group{margin-bottom:16px}
+.login-label{font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:5px;display:block}
+.login-input{
+  width:100%;border:1.5px solid var(--border);border-radius:8px;
+  padding:10px 14px;font-size:13.5px;background:#fff;color:var(--text);
+  outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s;
+}
+.login-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,204,.1)}
+.login-role-select{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;
+}
+.role-option{
+  border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;
+  cursor:pointer;transition:all .15s;text-align:center;
+  background:#fff;
+}
+.role-option:hover{border-color:var(--blue-md);background:var(--blue-lt)}
+.role-option.selected{border-color:var(--blue);background:var(--blue-lt)}
+.role-option i{font-size:20px;display:block;margin-bottom:4px;color:var(--text-2)}
+.role-option.selected i{color:var(--blue)}
+.role-option .rlabel{font-size:12.5px;font-weight:500;color:var(--text-2)}
+.role-option.selected .rlabel{color:var(--blue)}
+.login-btn{
+  width:100%;padding:11px;background:var(--blue);color:#fff;border:none;
+  border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;
+  transition:background .15s,transform .1s;
+}
+.login-btn:hover{background:var(--blue-dk)}
+.login-btn:active{transform:scale(.98)}
+.login-hint{margin-top:14px;font-size:11.5px;color:var(--text-3);text-align:center;line-height:1.6}
+.login-hint b{color:var(--text-2)}
+
+/* ───── SHARED APP LAYOUT ───── */
+.app{display:flex;width:100%;height:100vh;min-height:600px}
+.sidebar{width:220px;flex-shrink:0;background:var(--bg-card);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10}
+.sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid var(--border-lt)}
+.logo-mark{display:flex;align-items:center;gap:9px}
+.logo-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0}
+.logo-icon.admin-icon{background:var(--blue)}
+.logo-icon.operator-icon{background:var(--teal)}
+.logo-text .brand{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.logo-text .sub{font-size:10.5px;color:var(--text-3);margin-top:1px}
+.nav-section{padding:14px 18px 5px;font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;margin:1px 8px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--text-2);transition:background .12s,color .12s;user-select:none}
+.nav-item i{font-size:16px;flex-shrink:0}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{font-weight:500}
+/* admin nav active = blue */
+#screen-admin .nav-item.active{background:var(--blue-lt);color:var(--blue)}
+/* operator nav active = teal */
+#screen-operator .nav-item.active{background:var(--teal-lt);color:var(--teal)}
+
+.sidebar-user{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border-lt);display:flex;align-items:center;gap:9px}
+.sidebar-role-badge{
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;
+  text-transform:uppercase;letter-spacing:.05em;margin-left:auto;
+}
+.badge-admin{background:var(--blue-lt);color:var(--blue)}
+.badge-operator{background:var(--teal-lt);color:var(--teal)}
+
+.avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.av-blue{background:var(--blue-lt);color:var(--blue)}
+.av-green{background:var(--green-lt);color:var(--green)}
+.av-amber{background:var(--amber-lt);color:var(--amber)}
+.av-red{background:var(--red-lt);color:var(--red)}
+.av-teal{background:var(--teal-lt);color:var(--teal)}
+.user-info .name{font-size:12.5px;font-weight:500}
+.user-info .role{font-size:11px;color:var(--text-3)}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:600;flex:1;letter-spacing:-.2px}
+.badge-online{display:flex;align-items:center;gap:5px;background:var(--green-lt);color:var(--green);font-size:11.5px;font-weight:500;padding:4px 10px;border-radius:20px}
+.badge-online .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-green 2s infinite}
+@keyframes pulse-green{0%,100%{opacity:1}50%{opacity:.4}}
+.notif-wrap{position:relative}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--bg-card);position:absolute;top:2px;right:2px;pointer-events:none}
+.content{flex:1;overflow-y:auto;padding:22px 24px}
+
+.page{display:none;animation:fadeIn .18s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ───── CARD ───── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.card-title{font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:16px;display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.05em}
+.card-title i{font-size:15px}
+
+/* ───── STAT CARDS ───── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.s-blue::before{background:var(--blue)}
+.stat-card.s-green::before{background:var(--green)}
+.stat-card.s-amber::before{background:#E09000}
+.stat-card.s-red::before{background:var(--red)}
+.stat-card.s-teal::before{background:var(--teal)}
+.stat-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.stat-value{font-size:28px;font-weight:600;letter-spacing:-1px;line-height:1}
+.stat-sub{font-size:11px;color:var(--text-3);margin-top:5px}
+.c-blue{color:var(--blue)}.c-green{color:var(--green)}.c-amber{color:#B87000}.c-red{color:var(--red)}.c-teal{color:var(--teal)}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.span2{grid-column:span 2}
+
+/* ───── TABLE ───── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:600;color:var(--text-3);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;background:var(--bg)}
+td{padding:10px 12px;border-bottom:1px solid var(--border-lt);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#FAFCFF}
+.mono{font-family:'DM Mono',monospace;font-size:12px}
+
+/* ───── BADGES ───── */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.badge-active{background:var(--blue-lt);color:var(--blue)}
+.badge-done{background:var(--green-lt);color:var(--green)}
+.badge-cancel{background:var(--red-lt);color:var(--red)}
+.badge-warn{background:var(--amber-lt);color:var(--amber)}
+.badge-teal{background:var(--teal-lt);color:var(--teal)}
+
+/* ───── BUTTONS ───── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:13px;color:var(--text);font-family:inherit;font-weight:500;transition:all .12s;white-space:nowrap}
+.btn:hover{background:var(--bg);border-color:#C8D4E0}
+.btn:active{transform:scale(.98)}
+.btn i{font-size:15px}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:hover{background:var(--blue-dk);border-color:var(--blue-dk)}
+.btn-teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn-teal:hover{background:#004D40}
+.btn-success{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-success:hover{background:#1B5E20}
+.btn-danger{background:var(--red-lt);color:var(--red);border-color:#F2AAAA}
+.btn-danger:hover{background:#FFCDD2}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-sm i{font-size:13px}
+.btn-icon{padding:7px}
+.btn-icon i{font-size:16px}
+
+/* ───── FORMS ───── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;flex:1;min-width:180px;transition:border-color .12s}
+.search-box:focus-within{border-color:var(--blue)}
+.search-box i{color:var(--text-3);font-size:15px}
+.search-box input{border:none;background:transparent;outline:none;color:var(--text);font-size:13px;width:100%;font-family:inherit}
+select,.form-select{border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;background:var(--bg-card);color:var(--text);font-size:13px;cursor:pointer;font-family:inherit;outline:none;transition:border-color .12s}
+select:focus{border-color:var(--blue)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:500;color:var(--text-2);margin-bottom:5px;display:block}
+.form-input{width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;background:var(--bg-card);color:var(--text);outline:none;font-family:inherit;transition:border-color .12s}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,111,204,.08)}
+
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.section-title{font-size:16px;font-weight:600;letter-spacing:-.3px}
+
+/* ───── CHART ───── */
+.chart-bar-wrap{display:flex;align-items:flex-end;gap:5px;height:100px;padding:0 2px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar{width:100%;background:var(--blue-md);border-radius:3px 3px 0 0;transition:background .12s;cursor:pointer}
+.bar:hover{background:var(--blue)}
+.bar-lbl{font-size:9.5px;color:var(--text-3)}
+
+/* ───── PETUGAS LIST ───── */
+.petugas-list{display:flex;flex-direction:column;gap:8px}
+.petugas-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--radius-sm);background:var(--bg);border:1px solid var(--border-lt)}
+.petugas-name{font-size:13px;font-weight:500}
+.petugas-pos{font-size:11px;color:var(--text-3)}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-online{background:#4CAF50}.dot-busy{background:#FF9800}.dot-offline{background:var(--text-3)}
+
+/* ───── SCANNER ───── */
+.scanner-area{display:flex;flex-direction:column;align-items:center;gap:20px;padding:16px}
+.qr-frame{width:220px;height:220px;border:2px solid var(--blue);border-radius:14px;position:relative;display:flex;align-items:center;justify-content:center;background:var(--bg);overflow:hidden}
+.qr-corner{position:absolute;width:22px;height:22px;border-color:var(--blue);border-style:solid}
+.qr-corner.tl{top:-1px;left:-1px;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.qr-corner.tr{top:-1px;right:-1px;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.qr-corner.bl{bottom:-1px;left:-1px;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.qr-corner.br{bottom:-1px;right:-1px;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.scan-line{position:absolute;width:88%;height:2px;background:linear-gradient(90deg,transparent,var(--blue),transparent);animation:scan 1.8s ease-in-out infinite}
+@keyframes scan{0%,100%{top:14%}50%{top:80%}}
+.scan-result{width:100%;max-width:420px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;display:none;box-shadow:var(--shadow-md);animation:fadeIn .18s ease}
+.scan-result.show{display:block}
+.result-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border-lt)}
+.result-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.result-valid{background:var(--green-lt);color:var(--green)}
+.result-invalid{background:var(--red-lt);color:var(--red)}
+.info-row{display:flex;justify-content:space-between;margin-bottom:9px;font-size:13px;align-items:center}
+.info-label{color:var(--text-2)}.info-val{font-weight:500}
+.tarif-row{display:flex;justify-content:space-between;align-items:center;background:var(--blue-lt);border-radius:var(--radius-sm);padding:11px 14px;margin:14px 0}
+
+/* ───── LAPORAN TABS ───── */
+.laporan-tabs{display:flex;gap:3px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px;margin-bottom:18px;width:fit-content}
+.tab-btn{padding:6px 18px;border-radius:5px;cursor:pointer;font-size:13px;color:var(--text-2);border:none;background:none;font-family:inherit;font-weight:500;transition:all .12s}
+.tab-btn.active{background:var(--bg-card);color:var(--text);box-shadow:var(--shadow);border:1px solid var(--border)}
+
+/* ───── SETTINGS ───── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.progress-wrap{background:var(--bg);border-radius:4px;height:8px;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width .4s ease}
+.divider{height:1px;background:var(--border-lt);margin:14px 0}
+
+/* ───── OPERATOR SPECIFIC ───── */
+.op-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.op-action-card{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px 18px;cursor:pointer;transition:all .18s;text-align:center;
+  box-shadow:var(--shadow);
+}
+.op-action-card:hover{border-color:var(--teal);box-shadow:0 4px 16px rgba(0,105,92,.12);transform:translateY(-2px)}
+.op-action-card.primary-action{background:var(--teal);border-color:var(--teal);color:#fff}
+.op-action-card.primary-action:hover{background:#004D40}
+.op-action-icon{font-size:32px;margin-bottom:10px;display:block}
+.op-action-label{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.op-action-sub{font-size:11.5px;margin-top:3px;opacity:.7}
+
+.op-status-bar{
+  background:var(--teal);color:#fff;
+  border-radius:var(--radius);padding:14px 18px;
+  display:flex;align-items:center;gap:16px;margin-bottom:18px;
+}
+.op-status-bar i{font-size:22px;opacity:.85}
+.op-status-label{font-size:13px;opacity:.85}
+.op-status-value{font-size:22px;font-weight:700;letter-spacing:-1px}
+
+.op-stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.op-stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center;box-shadow:var(--shadow)}
+.op-stat-val{font-size:26px;font-weight:600;letter-spacing:-1px}
+.op-stat-lbl{font-size:11px;color:var(--text-3);text-transform:uppercase;font-weight:600;letter-spacing:.05em;margin-top:3px}
+
+.op-shift-card{
+  background:linear-gradient(135deg,var(--teal) 0%,#00897B 100%);
+  color:#fff;border-radius:var(--radius);padding:18px;margin-bottom:18px;
+}
+.op-shift-title{font-size:12px;font-weight:600;opacity:.75;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.op-shift-name{font-size:18px;font-weight:600;margin-bottom:10px}
+.op-shift-row{display:flex;gap:20px;flex-wrap:wrap}
+.op-shift-item{font-size:12px;opacity:.85;display:flex;align-items:center;gap:5px}
+
+/* ───── MODAL ───── */
+.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(15,25,35,.45);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .15s ease}
+.modal-overlay.hidden{display:none}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);width:100%;max-width:480px;animation:slideUp .18s ease}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border-lt)}
+.modal-title{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--text-3);font-size:18px;padding:2px;display:flex;align-items:center}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border-lt)}
+
+/* ───── NOTIF DROPDOWN ───── */
+.notif-dropdown{position:fixed;top:56px;right:22px;width:300px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-md);z-index:200;animation:fadeIn .15s ease}
+.notif-dropdown.hidden{display:none}
+.notif-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border-lt);font-size:13px;font-weight:600}
+.notif-item{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border-lt);font-size:12.5px}
+.notif-item:last-child{border-bottom:none}
+.notif-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.notif-text{color:var(--text-2);line-height:1.5}
+.notif-time{font-size:11px;color:var(--text-3);margin-top:2px}
+
+/* ───── TOAST ───── */
+.toast-container{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:8px;z-index:2000;pointer-events:none}
+.toast{background:var(--text);color:#fff;padding:11px 16px;border-radius:var(--radius-sm);font-size:13px;box-shadow:var(--shadow-md);animation:toastIn .2s ease;pointer-events:auto;display:flex;align-items:center;gap:8px;max-width:320px}
+.toast.toast-success{background:var(--green)}
+.toast.toast-error{background:var(--red)}
+.toast.toast-warn{background:#B87000}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#C8D4E0;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#9AAAB8}
+</style>
+
+<style id=&quot;mobile-overrides&quot;>
+/* Mobile overrides for 390px phone display */
+html, body { overflow: hidden; }
+.screen.active { height: 100vh !important; }
+
+/* Login - center card nicely */
+#screen-login {
+  padding: 16px !important;
+}
+.login-card {
+  padding: 28px 24px !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* App layout - stack sidebar as bottom nav on mobile */
+.app {
+  flex-direction: column !important;
+  height: 100vh !important;
+}
+
+/* Hide sidebar, show content full width */
+.sidebar {
+  display: none !important;
+}
+
+.main {
+  flex: 1 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Topbar compact */
+.topbar {
+  height: 48px !important;
+  padding: 0 16px !important;
+  gap: 8px !important;
+}
+.topbar-title { font-size: 14px !important; }
+
+/* Content area scrollable */
+.content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 14px 12px !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Stats grid 2 col on mobile */
+.stats-grid {
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  margin-bottom: 14px !important;
+}
+
+/* Row2 single col */
+.row2 { grid-template-columns: 1fr !important; gap: 12px !important; }
+
+/* Settings grid single col */
+.settings-grid { grid-template-columns: 1fr !important; }
+
+/* Operator action grid */
+.op-action-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+.op-action-card { padding: 16px 10px !important; }
+.op-action-icon { font-size: 24px !important; margin-bottom: 6px !important; }
+
+/* Op stat row */
+.op-stat-row { grid-template-columns: repeat(3,1fr) !important; gap: 8px !important; }
+.op-stat-val { font-size: 20px !important; }
+
+/* Bottom nav bar to replace sidebar */
+.mobile-nav {
+  display: flex !important;
+  background: #fff;
+  border-top: 1px solid #DDE4EE;
+  height: 60px;
+  flex-shrink: 0;
+  align-items: stretch;
+  z-index: 50;
+}
+
+.mobile-nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  color: #94A3B3;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+.mobile-nav-btn.active { color: #1A6FCC; }
+.mobile-nav-btn i { font-size: 20px; }
+#mobile-nav-admin .mobile-nav-btn i { font-size: 17px; }
+#mobile-nav-admin .mobile-nav-btn { font-size: 9px; }
+
+/* Modal full screen on mobile */
+.modal { max-width: 100% !important; margin: 0 !important; border-radius: 16px 16px 0 0 !important; position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; }
+.modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+
+/* Toast position */
+.toast-container { bottom: 70px !important; right: 12px !important; }
+
+/* Notif dropdown */
+.notif-dropdown { right: 8px !important; top: 48px !important; width: calc(100vw - 16px) !important; }
+
+/* Table horizontal scroll */
+.table-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+table { font-size: 12px !important; min-width: 500px !important; }
+
+/* Span2 reset */
+.span2 { grid-column: span 1 !important; }
+
+/* Operator shift card compact */
+.op-shift-card { padding: 14px !important; margin-bottom: 12px !important; }
+.op-shift-name { font-size: 15px !important; }
+.op-shift-row { gap: 10px !important; }
+
+/* Chart smaller */
+.chart-bar-wrap { height: 80px !important; }
+
+/* Scan area */
+.scanner-area { padding: 10px !important; gap: 14px !important; }
+.qr-frame { width: 180px !important; height: 180px !important; }
+
+/* Form grid single col on mobile */
+.form-grid { grid-template-columns: 1fr !important; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ LOGIN SCREEN ═══════ -->
+<div class=&quot;screen active&quot; id=&quot;screen-login&quot;>
+  <div id=&quot;login-bg&quot; style=&quot;width:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0D4E99 0%,#1A6FCC 50%,#0891b2 100%);&quot;>
+    <div class=&quot;login-card&quot;>
+      <div class=&quot;login-logo&quot;>
+        <div class=&quot;login-logo-icon&quot;><i class=&quot;ti ti-building-hospital&quot;></i></div>
+        <div class=&quot;login-logo-text&quot;>
+          <div class=&quot;brand&quot;>HPMS</div>
+          <div class=&quot;sub&quot;>Hospital Parking Management</div>
+        </div>
+      </div>
+      <div class=&quot;login-title&quot;>Selamat Datang</div>
+      <div class=&quot;login-sub&quot;>Pilih peran dan masukkan kredensial Anda</div>
+
+      <div class=&quot;login-form-group&quot; style=&quot;margin-bottom:10px;&quot;>
+        <label class=&quot;login-label&quot;>Login Sebagai</label>
+        <div class=&quot;login-role-select&quot;>
+          <div class=&quot;role-option selected&quot; id=&quot;role-admin&quot; onclick=&quot;selectRole('admin')&quot;>
+            <i class=&quot;ti ti-shield-check&quot;></i>
+            <div class=&quot;rlabel&quot;>Admin</div>
+          </div>
+          <div class=&quot;role-option&quot; id=&quot;role-operator&quot; onclick=&quot;selectRole('operator')&quot;>
+            <i class=&quot;ti ti-user-bolt&quot;></i>
+            <div class=&quot;rlabel&quot;>Operator</div>
+          </div>
+        </div>
+      </div>
+
+      <div class=&quot;login-form-group&quot;>
+        <label class=&quot;login-label&quot;>Username</label>
+        <input class=&quot;login-input&quot; id=&quot;login-user&quot; placeholder=&quot;Masukkan username&quot; value=&quot;admin&quot; />
+      </div>
+      <div class=&quot;login-form-group&quot;>
+        <label class=&quot;login-label&quot;>Password</label>
+        <input class=&quot;login-input&quot; type=&quot;password&quot; id=&quot;login-pass&quot; placeholder=&quot;Masukkan password&quot; value=&quot;••••••••&quot;
+          onkeydown=&quot;if(event.key==='Enter')doLogin()&quot; />
+      </div>
+      <button class=&quot;login-btn&quot; onclick=&quot;doLogin()&quot;>
+        <i class=&quot;ti ti-login&quot; style=&quot;margin-right:6px;&quot;></i> Masuk ke Sistem
+      </button>
+      <div class=&quot;login-hint&quot;>
+        Demo: Admin → <b>admin / admin123</b> &amp;nbsp;|&amp;nbsp; Operator → <b>budi / budi123</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ ADMIN SCREEN ═══════ -->
+<div class=&quot;screen&quot; id=&quot;screen-admin&quot;>
+<div class=&quot;app&quot;>
+  <div class=&quot;sidebar&quot;>
+    <div class=&quot;sidebar-logo&quot;>
+      <div class=&quot;logo-mark&quot;>
+        <div class=&quot;logo-icon admin-icon&quot;><i class=&quot;ti ti-building-hospital&quot;></i></div>
+        <div class=&quot;logo-text&quot;><div class=&quot;brand&quot;>HPMS</div><div class=&quot;sub&quot;>Admin Panel</div></div>
+      </div>
+    </div>
+    <div style=&quot;padding:6px 0;flex:1;overflow-y:auto;&quot;>
+      <div class=&quot;nav-section&quot;>Menu Utama</div>
+      <div class=&quot;nav-item active&quot; onclick=&quot;adminPage('dashboard',this)&quot;><i class=&quot;ti ti-layout-dashboard&quot;></i> Dashboard</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;adminPage('tiket',this)&quot;><i class=&quot;ti ti-ticket&quot;></i> Tiket Parkir</div>
+      <div class=&quot;nav-section&quot;>Administrasi</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;adminPage('laporan',this)&quot;><i class=&quot;ti ti-chart-bar&quot;></i> Laporan</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;adminPage('petugas',this)&quot;><i class=&quot;ti ti-users&quot;></i> Petugas</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;adminPage('tarif',this)&quot;><i class=&quot;ti ti-currency-dollar&quot;></i> Tarif Parkir</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;adminPage('pengaturan',this)&quot;><i class=&quot;ti ti-settings&quot;></i> Pengaturan</div>
+    </div>
+    <div class=&quot;sidebar-user&quot;>
+      <div class=&quot;avatar av-blue&quot;>SA</div>
+      <div class=&quot;user-info&quot;><div class=&quot;name&quot;>Super Admin</div><div class=&quot;role&quot;>IT Manager</div></div>
+      <span class=&quot;sidebar-role-badge badge-admin&quot;>Admin</span>
+    </div>
+  </div>
+
+  <div class=&quot;main&quot;>
+    <div class=&quot;topbar&quot;>
+      <div class=&quot;topbar-title&quot; id=&quot;admin-page-title&quot;>Dashboard</div>
+      <div class=&quot;badge-online&quot;><div class=&quot;dot&quot;></div> Online</div>
+      <div class=&quot;notif-wrap&quot; style=&quot;position:relative;&quot;>
+        <button class=&quot;btn btn-icon&quot; style=&quot;border:1px solid var(--border);&quot; onclick=&quot;toggleNotif(event)&quot;><i class=&quot;ti ti-bell&quot;></i></button>
+        <div class=&quot;notif-dot&quot; id=&quot;notif-dot&quot;></div>
+      </div>
+      <button class=&quot;btn btn-sm btn-danger&quot; onclick=&quot;doLogout()&quot; style=&quot;gap:5px;&quot;><i class=&quot;ti ti-logout&quot;></i> Logout</button>
+    </div>
+    <div class=&quot;content&quot;>
+
+      <!-- ── ADMIN: DASHBOARD ── -->
+      <div class=&quot;page active&quot; id=&quot;admin-page-dashboard&quot;>
+        <div class=&quot;stats-grid&quot;>
+          <div class=&quot;stat-card s-blue&quot;>
+            <div class=&quot;stat-label&quot;><i class=&quot;ti ti-car&quot;></i> Dalam Area</div>
+            <div class=&quot;stat-value c-blue&quot; id=&quot;stat-dalam&quot;>47</div>
+            <div class=&quot;stat-sub&quot;>dari kapasitas 120</div>
+            <div class=&quot;progress-wrap&quot; style=&quot;margin-top:10px;&quot;><div class=&quot;progress-fill&quot; style=&quot;width:39%;background:var(--blue);opacity:.4;&quot;></div></div>
+          </div>
+          <div class=&quot;stat-card s-green&quot;>
+            <div class=&quot;stat-label&quot;><i class=&quot;ti ti-arrow-bar-to-down&quot;></i> Masuk Hari Ini</div>
+            <div class=&quot;stat-value c-green&quot; id=&quot;stat-masuk&quot;>134</div>
+            <div class=&quot;stat-sub&quot;>+12 dari kemarin</div>
+          </div>
+          <div class=&quot;stat-card s-amber&quot;>
+            <div class=&quot;stat-label&quot;><i class=&quot;ti ti-arrow-bar-up&quot;></i> Keluar Hari Ini</div>
+            <div class=&quot;stat-value c-amber&quot; id=&quot;stat-keluar&quot;>87</div>
+            <div class=&quot;stat-sub&quot;>rata-rata 2.1 jam/kend</div>
+          </div>
+          <div class=&quot;stat-card s-red&quot;>
+            <div class=&quot;stat-label&quot;><i class=&quot;ti ti-parking&quot;></i> Sisa Kapasitas</div>
+            <div class=&quot;stat-value c-red&quot;>73</div>
+            <div class=&quot;stat-sub&quot; id=&quot;kapasitas-pct&quot;>61% tersedia</div>
+          </div>
+        </div>
+        <div class=&quot;row2&quot;>
+          <div class=&quot;card span2&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-chart-bar&quot;></i> Kunjungan per Jam — Hari Ini</div>
+            <div class=&quot;chart-bar-wrap&quot; id=&quot;hourly-chart&quot;></div>
+          </div>
+        </div>
+        <div class=&quot;row2&quot;>
+          <div class=&quot;card&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-clock&quot;></i> Transaksi Terbaru</div>
+            <div class=&quot;table-wrap&quot;><table><thead><tr><th>No. Tiket</th><th>Jenis</th><th>Masuk</th><th>Status</th></tr></thead><tbody id=&quot;recent-table&quot;></tbody></table></div>
+          </div>
+          <div class=&quot;card&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-users&quot;></i> Petugas Aktif</div>
+            <div class=&quot;petugas-list&quot; id=&quot;petugas-aktif&quot;></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN: TIKET ── -->
+      <div class=&quot;page&quot; id=&quot;admin-page-tiket&quot;>
+        <div class=&quot;section-header&quot;>
+          <div class=&quot;section-title&quot;>Manajemen Tiket Parkir</div>
+          <button class=&quot;btn btn-primary&quot; onclick=&quot;openNewTicket()&quot;><i class=&quot;ti ti-plus&quot;></i> Tiket Baru</button>
+        </div>
+        <div class=&quot;toolbar&quot;>
+          <div class=&quot;search-box&quot;><i class=&quot;ti ti-search&quot;></i><input placeholder=&quot;Cari nomor tiket atau jenis…&quot; oninput=&quot;filterTickets(this.value)&quot; /></div>
+          <select onchange=&quot;filterStatus(this.value)&quot;><option value=&quot;&quot;>Semua Status</option><option value=&quot;AKTIF&quot;>Aktif</option><option value=&quot;SELESAI&quot;>Selesai</option><option value=&quot;BATAL&quot;>Batal</option></select>
+          <select onchange=&quot;filterJenis(this.value)&quot;><option value=&quot;&quot;>Semua Jenis</option><option>Motor</option><option>Mobil</option><option>Kendaraan Besar</option></select>
+          <button class=&quot;btn&quot; onclick=&quot;exportCSV()&quot;><i class=&quot;ti ti-download&quot;></i> Export</button>
+        </div>
+        <div class=&quot;card&quot; style=&quot;padding:0;&quot;>
+          <div class=&quot;table-wrap&quot;><table><thead><tr><th>No. Tiket</th><th>Jenis Kendaraan</th><th>Masuk</th><th>Keluar</th><th>Durasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody id=&quot;tiket-table&quot;></tbody></table></div>
+        </div>
+        <div id=&quot;new-ticket-form&quot; style=&quot;display:none;margin-top:16px;&quot;>
+          <div class=&quot;card&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-ticket&quot;></i> Buat Tiket Baru</div>
+            <div class=&quot;form-grid&quot;>
+              <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Jenis Kendaraan</label><select class=&quot;form-input&quot; id=&quot;vtype&quot;><option>Motor</option><option>Mobil</option><option>Kendaraan Besar</option></select></div>
+              <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Petugas Masuk</label><select class=&quot;form-input&quot;><option>Budi Santoso</option><option>Dewi Rahayu</option><option>Ahmad Fauzi</option></select></div>
+            </div>
+            <div style=&quot;display:flex;gap:8px;&quot;>
+              <button class=&quot;btn btn-primary&quot; onclick=&quot;createTicket()&quot;><i class=&quot;ti ti-printer&quot;></i> Cetak Tiket</button>
+              <button class=&quot;btn&quot; onclick=&quot;document.getElementById('new-ticket-form').style.display='none'&quot;>Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN: LAPORAN ── -->
+      <div class=&quot;page&quot; id=&quot;admin-page-laporan&quot;>
+        <div class=&quot;section-header&quot;>
+          <div class=&quot;section-title&quot;>Laporan Parkir</div>
+          <div style=&quot;display:flex;gap:8px;&quot;>
+            <button class=&quot;btn&quot; onclick=&quot;exportLaporan('pdf')&quot;><i class=&quot;ti ti-file-type-pdf&quot;></i> Export PDF</button>
+            <button class=&quot;btn&quot; onclick=&quot;exportLaporan('excel')&quot;><i class=&quot;ti ti-table-export&quot;></i> Export Excel</button>
+          </div>
+        </div>
+        <div class=&quot;laporan-tabs&quot;>
+          <button class=&quot;tab-btn active&quot; onclick=&quot;switchTab('harian',this)&quot;>Harian</button>
+          <button class=&quot;tab-btn&quot; onclick=&quot;switchTab('mingguan',this)&quot;>Mingguan</button>
+          <button class=&quot;tab-btn&quot; onclick=&quot;switchTab('bulanan',this)&quot;>Bulanan</button>
+        </div>
+        <div class=&quot;stats-grid&quot; style=&quot;grid-template-columns:repeat(3,1fr);&quot;>
+          <div class=&quot;stat-card s-blue&quot;><div class=&quot;stat-label&quot;>Total Kendaraan</div><div class=&quot;stat-value c-blue&quot; id=&quot;lap-total&quot;>134</div><div class=&quot;stat-sub&quot;>hari ini</div></div>
+          <div class=&quot;stat-card s-amber&quot;><div class=&quot;stat-label&quot;>Rata-rata Durasi</div><div class=&quot;stat-value c-amber&quot; id=&quot;lap-durasi&quot;>2j 7m</div><div class=&quot;stat-sub&quot;>per kendaraan</div></div>
+          <div class=&quot;stat-card s-green&quot;><div class=&quot;stat-label&quot;>Puncak Kunjungan</div><div class=&quot;stat-value c-green&quot; id=&quot;lap-puncak&quot;>09:00</div><div class=&quot;stat-sub&quot;>jam tersibuk</div></div>
+        </div>
+        <div class=&quot;row2&quot; style=&quot;margin-top:0;&quot;>
+          <div class=&quot;card&quot;><div class=&quot;card-title&quot;><i class=&quot;ti ti-chart-bar&quot;></i> Kunjungan per Jenis Kendaraan</div><div id=&quot;laporan-chart&quot; style=&quot;display:flex;flex-direction:column;gap:12px;margin-top:4px;&quot;></div></div>
+          <div class=&quot;card&quot;><div class=&quot;card-title&quot;><i class=&quot;ti ti-clock-2&quot;></i> Distribusi Jam Kunjungan</div><div class=&quot;chart-bar-wrap&quot; id=&quot;laporan-hour-chart&quot; style=&quot;height:120px;&quot;></div></div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN: PETUGAS ── -->
+      <div class=&quot;page&quot; id=&quot;admin-page-petugas&quot;>
+        <div class=&quot;section-header&quot;>
+          <div class=&quot;section-title&quot;>Manajemen Petugas</div>
+          <button class=&quot;btn btn-primary&quot; onclick=&quot;openModal('modal-tambah-petugas')&quot;><i class=&quot;ti ti-user-plus&quot;></i> Tambah Petugas</button>
+        </div>
+        <div class=&quot;card&quot; style=&quot;padding:0;&quot;>
+          <div class=&quot;table-wrap&quot;><table><thead><tr><th>Petugas</th><th>Role</th><th>Pos</th><th>Status</th><th>Login Terakhir</th><th>Aksi</th></tr></thead><tbody id=&quot;petugas-table&quot;></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN: TARIF ── -->
+      <div class=&quot;page&quot; id=&quot;admin-page-tarif&quot;>
+        <div class=&quot;section-header&quot;>
+          <div class=&quot;section-title&quot;>Konfigurasi Tarif Parkir</div>
+          <button class=&quot;btn btn-primary&quot; onclick=&quot;openModal('modal-tambah-tarif')&quot;><i class=&quot;ti ti-plus&quot;></i> Tambah Tarif</button>
+        </div>
+        <div class=&quot;card&quot; style=&quot;padding:0;&quot;>
+          <div class=&quot;table-wrap&quot;><table><thead><tr><th>Jenis Kendaraan</th><th>Tipe Tarif</th><th>Tarif Dasar</th><th>Per Jam</th><th>Maks/Hari</th><th>Gratis (menit)</th><th>Status</th></tr></thead><tbody id=&quot;tarif-table&quot;></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ── ADMIN: PENGATURAN ── -->
+      <div class=&quot;page&quot; id=&quot;admin-page-pengaturan&quot;>
+        <div class=&quot;section-title&quot; style=&quot;margin-bottom:18px;&quot;>Pengaturan Sistem</div>
+        <div class=&quot;settings-grid&quot;>
+          <div class=&quot;card&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-building-hospital&quot;></i> Informasi Rumah Sakit</div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Nama Rumah Sakit</label><input class=&quot;form-input&quot; value=&quot;RS Umum Daerah Kota&quot; /></div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Alamat</label><input class=&quot;form-input&quot; value=&quot;Jl. Kesehatan No. 1, Semarang&quot; /></div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Telepon Pos Parkir</label><input class=&quot;form-input&quot; value=&quot;(024) 8451234&quot; /></div>
+            <button class=&quot;btn btn-primary&quot; onclick=&quot;saveSettings(this)&quot;><i class=&quot;ti ti-device-floppy&quot;></i> Simpan</button>
+          </div>
+          <div class=&quot;card&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-printer&quot;></i> Konfigurasi Printer Thermal</div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Nama Printer</label><input class=&quot;form-input&quot; value=&quot;Epson TM-T82&quot; /></div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Koneksi</label><select class=&quot;form-input&quot;><option>USB</option><option>Bluetooth</option><option>WiFi/Network</option></select></div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Lebar Kertas</label><select class=&quot;form-input&quot;><option>80mm</option><option>58mm</option></select></div>
+            <button class=&quot;btn btn-primary&quot; onclick=&quot;saveSettings(this)&quot;><i class=&quot;ti ti-device-floppy&quot;></i> Simpan</button>
+          </div>
+          <div class=&quot;card&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-shield-lock&quot;></i> Keamanan</div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Token expire (jam)</label><input class=&quot;form-input&quot; type=&quot;number&quot; value=&quot;8&quot; /></div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Max percobaan login gagal</label><input class=&quot;form-input&quot; type=&quot;number&quot; value=&quot;5&quot; /></div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Kunci akun selama (menit)</label><input class=&quot;form-input&quot; type=&quot;number&quot; value=&quot;15&quot; /></div>
+            <button class=&quot;btn btn-primary&quot; onclick=&quot;saveSettings(this)&quot;><i class=&quot;ti ti-device-floppy&quot;></i> Simpan</button>
+          </div>
+          <div class=&quot;card&quot;>
+            <div class=&quot;card-title&quot;><i class=&quot;ti ti-database&quot;></i> Backup &amp;amp; Kapasitas</div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Kapasitas Parkir Total</label><input class=&quot;form-input&quot; type=&quot;number&quot; value=&quot;120&quot; /></div>
+            <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Notifikasi kapasitas (%)</label><input class=&quot;form-input&quot; type=&quot;number&quot; value=&quot;80&quot; /></div>
+            <button class=&quot;btn btn-success&quot; onclick=&quot;doBackup()&quot;><i class=&quot;ti ti-database-export&quot;></i> Backup Sekarang</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+</div><!-- /screen-admin -->
+
+<!-- ═══════════════════════════════════════ OPERATOR SCREEN ═══════ -->
+<div class=&quot;screen&quot; id=&quot;screen-operator&quot;>
+<div class=&quot;app&quot;>
+  <div class=&quot;sidebar&quot;>
+    <div class=&quot;sidebar-logo&quot;>
+      <div class=&quot;logo-mark&quot;>
+        <div class=&quot;logo-icon operator-icon&quot;><i class=&quot;ti ti-building-hospital&quot;></i></div>
+        <div class=&quot;logo-text&quot;><div class=&quot;brand&quot;>HPMS</div><div class=&quot;sub&quot;>Operator</div></div>
+      </div>
+    </div>
+    <div style=&quot;padding:6px 0;flex:1;overflow-y:auto;&quot;>
+      <div class=&quot;nav-section&quot;>Operasional</div>
+      <div class=&quot;nav-item active&quot; onclick=&quot;opPage('home',this)&quot;><i class=&quot;ti ti-home&quot;></i> Beranda</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;opPage('masuk',this)&quot;><i class=&quot;ti ti-login&quot;></i> Kendaraan Masuk</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;opPage('keluar',this)&quot;><i class=&quot;ti ti-logout&quot;></i> Kendaraan Keluar</div>
+      <div class=&quot;nav-section&quot;>Informasi</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;opPage('riwayat',this)&quot;><i class=&quot;ti ti-history&quot;></i> Riwayat Shift</div>
+      <div class=&quot;nav-item&quot; onclick=&quot;opPage('tarif-info',this)&quot;><i class=&quot;ti ti-info-circle&quot;></i> Info Tarif</div>
+    </div>
+    <div class=&quot;sidebar-user&quot;>
+      <div class=&quot;avatar av-teal&quot; id=&quot;op-avatar&quot;>BS</div>
+      <div class=&quot;user-info&quot;><div class=&quot;name&quot; id=&quot;op-name&quot;>Budi Santoso</div><div class=&quot;role&quot; id=&quot;op-pos&quot;>Gerbang Utara</div></div>
+      <span class=&quot;sidebar-role-badge badge-operator&quot;>Operator</span>
+    </div>
+  </div>
+
+  <div class=&quot;main&quot;>
+    <div class=&quot;topbar&quot;>
+      <div class=&quot;topbar-title&quot; id=&quot;op-page-title&quot;>Beranda</div>
+      <div class=&quot;badge-online&quot;><div class=&quot;dot&quot;></div> Online</div>
+      <div style=&quot;font-size:12px;color:var(--text-3);font-family:'DM Mono',monospace;&quot; id=&quot;op-clock&quot;>--:--</div>
+      <button class=&quot;btn btn-sm btn-danger&quot; onclick=&quot;doLogout()&quot; style=&quot;gap:5px;&quot;><i class=&quot;ti ti-logout&quot;></i> Logout</button>
+    </div>
+    <div class=&quot;content&quot;>
+
+      <!-- ── OPERATOR: BERANDA ── -->
+      <div class=&quot;page active&quot; id=&quot;op-page-home&quot;>
+        <div class=&quot;op-shift-card&quot;>
+          <div class=&quot;op-shift-title&quot;>Shift Aktif</div>
+          <div class=&quot;op-shift-name&quot; id=&quot;op-shift-name&quot;>Budi Santoso</div>
+          <div class=&quot;op-shift-row&quot;>
+            <div class=&quot;op-shift-item&quot;><i class=&quot;ti ti-map-pin&quot;></i> <span id=&quot;op-shift-pos&quot;>Gerbang Utara</span></div>
+            <div class=&quot;op-shift-item&quot;><i class=&quot;ti ti-clock&quot;></i> Shift Pagi 07:00 – 15:00</div>
+            <div class=&quot;op-shift-item&quot;><i class=&quot;ti ti-calendar&quot;></i> <span id=&quot;op-shift-date&quot;></span></div>
+          </div>
+        </div>
+
+        <div class=&quot;op-stat-row&quot;>
+          <div class=&quot;op-stat&quot;>
+            <div class=&quot;op-stat-val c-teal&quot; id=&quot;op-stat-masuk&quot;>0</div>
+            <div class=&quot;op-stat-lbl&quot;>Masuk Shift Ini</div>
+          </div>
+          <div class=&quot;op-stat&quot;>
+            <div class=&quot;op-stat-val c-green&quot; id=&quot;op-stat-keluar&quot;>0</div>
+            <div class=&quot;op-stat-lbl&quot;>Keluar Shift Ini</div>
+          </div>
+          <div class=&quot;op-stat&quot;>
+            <div class=&quot;op-stat-val c-blue&quot; id=&quot;op-stat-dalam2&quot;>47</div>
+            <div class=&quot;op-stat-lbl&quot;>Dalam Area</div>
+          </div>
+        </div>
+
+        <div class=&quot;op-action-grid&quot;>
+          <div class=&quot;op-action-card primary-action&quot; onclick=&quot;opPage('masuk', document.querySelectorAll('#screen-operator .nav-item')[1])&quot;>
+            <i class=&quot;ti ti-login op-action-icon&quot;></i>
+            <div class=&quot;op-action-label&quot;>Kendaraan Masuk</div>
+            <div class=&quot;op-action-sub&quot;>Buat tiket baru</div>
+          </div>
+          <div class=&quot;op-action-card&quot; style=&quot;border-color:var(--blue-md);&quot; onclick=&quot;opPage('keluar', document.querySelectorAll('#screen-operator .nav-item')[2])&quot;>
+            <i class=&quot;ti ti-logout op-action-icon&quot; style=&quot;color:var(--blue);&quot;></i>
+            <div class=&quot;op-action-label&quot;>Kendaraan Keluar</div>
+            <div class=&quot;op-action-sub&quot;>Scan &amp; validasi tiket</div>
+          </div>
+        </div>
+
+        <div class=&quot;card&quot;>
+          <div class=&quot;card-title&quot;><i class=&quot;ti ti-clock&quot;></i> Transaksi Shift Ini</div>
+          <div class=&quot;table-wrap&quot;><table><thead><tr><th>No. Tiket</th><th>Jenis</th><th>Jam</th><th>Aksi</th><th>Status</th></tr></thead><tbody id=&quot;op-recent-table&quot;></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ── OPERATOR: KENDARAAN MASUK ── -->
+      <div class=&quot;page&quot; id=&quot;op-page-masuk&quot;>
+        <div class=&quot;section-header&quot;><div class=&quot;section-title&quot;>Kendaraan Masuk</div></div>
+
+        <div class=&quot;op-status-bar&quot;>
+          <i class=&quot;ti ti-parking&quot;></i>
+          <div>
+            <div class=&quot;op-status-label&quot;>Slot Tersedia</div>
+            <div class=&quot;op-status-value&quot; id=&quot;op-slot-tersedia&quot;>73</div>
+          </div>
+          <div style=&quot;margin-left:auto;font-size:13px;opacity:.8;&quot;>dari kapasitas 120 slot</div>
+        </div>
+
+        <div class=&quot;card&quot; style=&quot;max-width:520px;&quot;>
+          <div class=&quot;card-title&quot;><i class=&quot;ti ti-ticket&quot;></i> Cetak Tiket Masuk</div>
+          <div class=&quot;form-group&quot;>
+            <label class=&quot;form-label&quot;>Jenis Kendaraan</label>
+            <div style=&quot;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px;&quot;>
+              <div class=&quot;role-option selected&quot; id=&quot;vopt-motor&quot; onclick=&quot;selectVehicle('Motor')&quot;>
+                <i class=&quot;ti ti-motorbike&quot; style=&quot;font-size:22px;display:block;margin-bottom:4px;color:var(--text-2);&quot;></i>
+                <div style=&quot;font-size:12.5px;font-weight:500;color:var(--text-2);&quot;>Motor</div>
+              </div>
+              <div class=&quot;role-option&quot; id=&quot;vopt-mobil&quot; onclick=&quot;selectVehicle('Mobil')&quot;>
+                <i class=&quot;ti ti-car&quot; style=&quot;font-size:22px;display:block;margin-bottom:4px;color:var(--text-2);&quot;></i>
+                <div style=&quot;font-size:12.5px;font-weight:500;color:var(--text-2);&quot;>Mobil</div>
+              </div>
+              <div class=&quot;role-option&quot; id=&quot;vopt-besar&quot; onclick=&quot;selectVehicle('Kendaraan Besar')&quot;>
+                <i class=&quot;ti ti-truck&quot; style=&quot;font-size:22px;display:block;margin-bottom:4px;color:var(--text-2);&quot;></i>
+                <div style=&quot;font-size:12.5px;font-weight:500;color:var(--text-2);&quot;>Besar</div>
+              </div>
+            </div>
+          </div>
+          <div class=&quot;form-group&quot;>
+            <label class=&quot;form-label&quot;>Catatan (opsional)</label>
+            <input class=&quot;form-input&quot; id=&quot;op-catatan&quot; placeholder=&quot;cth: plat nomor, warna kendaraan…&quot; />
+          </div>
+          <button class=&quot;btn btn-teal&quot; style=&quot;width:100%;justify-content:center;padding:12px;font-size:14px;&quot; onclick=&quot;opCreateTicket()&quot;>
+            <i class=&quot;ti ti-printer&quot;></i> Cetak Tiket &amp; Buka Palang
+          </button>
+        </div>
+
+        <div id=&quot;op-tiket-result&quot; style=&quot;display:none;margin-top:16px;max-width:520px;&quot;>
+          <div class=&quot;card&quot; style=&quot;border-color:var(--teal);border-width:2px;&quot;>
+            <div style=&quot;display:flex;align-items:center;gap:10px;margin-bottom:14px;&quot;>
+              <div style=&quot;width:40px;height:40px;border-radius:50%;background:var(--teal-lt);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:20px;&quot;><i class=&quot;ti ti-circle-check&quot;></i></div>
+              <div><div style=&quot;font-weight:600;color:var(--teal);&quot;>Tiket Berhasil Dicetak</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Palang masuk terbuka</div></div>
+            </div>
+            <div id=&quot;op-tiket-info&quot;></div>
+            <button class=&quot;btn&quot; style=&quot;width:100%;justify-content:center;margin-top:12px;&quot; onclick=&quot;document.getElementById('op-tiket-result').style.display='none'&quot;><i class=&quot;ti ti-plus&quot;></i> Kendaraan Berikutnya</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OPERATOR: KENDARAAN KELUAR ── -->
+      <div class=&quot;page&quot; id=&quot;op-page-keluar&quot;>
+        <div class=&quot;section-header&quot;><div class=&quot;section-title&quot;>Validasi Kendaraan Keluar</div></div>
+        <div class=&quot;scanner-area&quot;>
+          <div style=&quot;color:var(--text-3);font-size:13px;&quot;>Arahkan kamera ke QR Code pada tiket parkir</div>
+          <div class=&quot;qr-frame&quot; style=&quot;border-color:var(--teal);&quot;>
+            <div class=&quot;qr-corner tl&quot; style=&quot;border-color:var(--teal);&quot;></div>
+            <div class=&quot;qr-corner tr&quot; style=&quot;border-color:var(--teal);&quot;></div>
+            <div class=&quot;qr-corner bl&quot; style=&quot;border-color:var(--teal);&quot;></div>
+            <div class=&quot;qr-corner br&quot; style=&quot;border-color:var(--teal);&quot;></div>
+            <div class=&quot;scan-line&quot; style=&quot;background:linear-gradient(90deg,transparent,var(--teal),transparent);&quot;></div>
+            <i class=&quot;ti ti-qrcode&quot; style=&quot;font-size:48px;color:var(--text-3);opacity:.3;&quot;></i>
+          </div>
+          <div style=&quot;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;&quot;>
+            <button class=&quot;btn btn-teal&quot; onclick=&quot;opSimulateScan('valid')&quot;><i class=&quot;ti ti-qrcode&quot;></i> Simulasi Scan Valid</button>
+            <button class=&quot;btn btn-danger&quot; onclick=&quot;opSimulateScan('invalid')&quot;><i class=&quot;ti ti-ban&quot;></i> Simulasi Tidak Valid</button>
+          </div>
+          <div style=&quot;width:100%;max-width:420px;&quot;>
+            <div style=&quot;text-align:center;font-size:12px;color:var(--text-3);margin-bottom:8px;&quot;>atau masukkan nomor tiket secara manual</div>
+            <div style=&quot;display:flex;gap:8px;&quot;>
+              <input class=&quot;form-input&quot; id=&quot;op-manual-input&quot; placeholder=&quot;cth: 20250605-00123&quot; style=&quot;flex:1;&quot; />
+              <button class=&quot;btn btn-teal&quot; onclick=&quot;opManualValidate()&quot;><i class=&quot;ti ti-search&quot;></i> Cari</button>
+            </div>
+          </div>
+          <div class=&quot;scan-result&quot; id=&quot;op-scan-result&quot;></div>
+        </div>
+      </div>
+
+      <!-- ── OPERATOR: RIWAYAT SHIFT ── -->
+      <div class=&quot;page&quot; id=&quot;op-page-riwayat&quot;>
+        <div class=&quot;section-header&quot;><div class=&quot;section-title&quot;>Riwayat Shift Ini</div></div>
+        <div class=&quot;op-stat-row&quot;>
+          <div class=&quot;op-stat&quot;><div class=&quot;op-stat-val c-teal&quot; id=&quot;op-rw-masuk&quot;>0</div><div class=&quot;op-stat-lbl&quot;>Total Masuk</div></div>
+          <div class=&quot;op-stat&quot;><div class=&quot;op-stat-val c-green&quot; id=&quot;op-rw-keluar&quot;>0</div><div class=&quot;op-stat-lbl&quot;>Total Keluar</div></div>
+          <div class=&quot;op-stat&quot;><div class=&quot;op-stat-val c-amber&quot; id=&quot;op-rw-motor&quot;>0</div><div class=&quot;op-stat-lbl&quot;>Motor</div></div>
+        </div>
+        <div class=&quot;card&quot; style=&quot;padding:0;&quot;>
+          <div class=&quot;table-wrap&quot;><table><thead><tr><th>No. Tiket</th><th>Jenis</th><th>Masuk</th><th>Keluar</th><th>Status</th></tr></thead><tbody id=&quot;op-riwayat-table&quot;></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ── OPERATOR: INFO TARIF ── -->
+      <div class=&quot;page&quot; id=&quot;op-page-tarif-info&quot;>
+        <div class=&quot;section-header&quot;><div class=&quot;section-title&quot;>Informasi Tarif Parkir</div></div>
+        <div style=&quot;display:grid;gap:14px;&quot;>
+          <div class=&quot;card&quot; style=&quot;border-left:4px solid var(--blue);&quot;>
+            <div style=&quot;display:flex;align-items:center;gap:12px;margin-bottom:12px;&quot;>
+              <div style=&quot;font-size:28px;&quot;><i class=&quot;ti ti-motorbike&quot; style=&quot;color:var(--blue);&quot;></i></div>
+              <div><div style=&quot;font-weight:600;font-size:15px;&quot;>Motor</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Tarif Progresif</div></div>
+              <span class=&quot;badge badge-active&quot; style=&quot;margin-left:auto;&quot;>Berlaku</span>
+            </div>
+            <div style=&quot;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;&quot;>
+              <div style=&quot;text-align:center;background:var(--bg);border-radius:8px;padding:12px 8px;&quot;>
+                <div style=&quot;font-size:16px;font-weight:600;color:var(--blue);&quot;>Rp 2.000</div>
+                <div style=&quot;font-size:11px;color:var(--text-3);margin-top:3px;&quot;>Tarif Dasar</div>
+              </div>
+              <div style=&quot;text-align:center;background:var(--bg);border-radius:8px;padding:12px 8px;&quot;>
+                <div style=&quot;font-size:16px;font-weight:600;color:var(--blue);&quot;>Rp 1.000</div>
+                <div style=&quot;font-size:11px;color:var(--text-3);margin-top:3px;&quot;>Per Jam</div>
+              </div>
+              <div style=&quot;text-align:center;background:var(--bg);border-radius:8px;padding:12px 8px;&quot;>
+                <div style=&quot;font-size:16px;font-weight:600;color:var(--blue);&quot;>Rp 10.000</div>
+                <div style=&quot;font-size:11px;color:var(--text-3);margin-top:3px;&quot;>Maks/Hari</div>
+              </div>
+            </div>
+            <div style=&quot;font-size:12px;color:var(--text-3);margin-top:10px;&quot;><i class=&quot;ti ti-info-circle&quot; style=&quot;margin-right:4px;&quot;></i>Gratis 15 menit pertama</div>
+          </div>
+          <div class=&quot;card&quot; style=&quot;border-left:4px solid var(--green);&quot;>
+            <div style=&quot;display:flex;align-items:center;gap:12px;margin-bottom:12px;&quot;>
+              <div style=&quot;font-size:28px;&quot;><i class=&quot;ti ti-car&quot; style=&quot;color:var(--green);&quot;></i></div>
+              <div><div style=&quot;font-weight:600;font-size:15px;&quot;>Mobil</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Tarif Progresif</div></div>
+              <span class=&quot;badge badge-done&quot; style=&quot;margin-left:auto;&quot;>Berlaku</span>
+            </div>
+            <div style=&quot;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;&quot;>
+              <div style=&quot;text-align:center;background:var(--bg);border-radius:8px;padding:12px 8px;&quot;><div style=&quot;font-size:16px;font-weight:600;color:var(--green);&quot;>Rp 3.000</div><div style=&quot;font-size:11px;color:var(--text-3);margin-top:3px;&quot;>Tarif Dasar</div></div>
+              <div style=&quot;text-align:center;background:var(--bg);border-radius:8px;padding:12px 8px;&quot;><div style=&quot;font-size:16px;font-weight:600;color:var(--green);&quot;>Rp 2.000</div><div style=&quot;font-size:11px;color:var(--text-3);margin-top:3px;&quot;>Per Jam</div></div>
+              <div style=&quot;text-align:center;background:var(--bg);border-radius:8px;padding:12px 8px;&quot;><div style=&quot;font-size:16px;font-weight:600;color:var(--green);&quot;>Rp 20.000</div><div style=&quot;font-size:11px;color:var(--text-3);margin-top:3px;&quot;>Maks/Hari</div></div>
+            </div>
+            <div style=&quot;font-size:12px;color:var(--text-3);margin-top:10px;&quot;><i class=&quot;ti ti-info-circle&quot; style=&quot;margin-right:4px;&quot;></i>Gratis 15 menit pertama</div>
+          </div>
+          <div class=&quot;card&quot; style=&quot;border-left:4px solid var(--amber);&quot;>
+            <div style=&quot;display:flex;align-items:center;gap:12px;margin-bottom:12px;&quot;>
+              <div style=&quot;font-size:28px;&quot;><i class=&quot;ti ti-truck&quot; style=&quot;color:var(--amber);&quot;></i></div>
+              <div><div style=&quot;font-weight:600;font-size:15px;&quot;>Kendaraan Besar</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Tarif Flat</div></div>
+              <span class=&quot;badge badge-warn&quot; style=&quot;margin-left:auto;&quot;>Berlaku</span>
+            </div>
+            <div style=&quot;display:grid;grid-template-columns:1fr;gap:10px;&quot;>
+              <div style=&quot;text-align:center;background:var(--bg);border-radius:8px;padding:12px 8px;&quot;><div style=&quot;font-size:20px;font-weight:600;color:var(--amber);&quot;>Rp 10.000</div><div style=&quot;font-size:11px;color:var(--text-3);margin-top:3px;&quot;>Tarif Flat (sekali masuk)</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+</div><!-- /screen-operator -->
+
+<!-- ── TOAST ── -->
+<div class=&quot;toast-container&quot; id=&quot;toast-container&quot;></div>
+
+<!-- ── NOTIF DROPDOWN ── -->
+<div class=&quot;notif-dropdown hidden&quot; id=&quot;notif-dropdown&quot;>
+  <div class=&quot;notif-header&quot;>Notifikasi <button class=&quot;btn btn-sm&quot; onclick=&quot;markAllRead()&quot; style=&quot;font-size:11px;padding:3px 8px;&quot;>Tandai Dibaca</button></div>
+  <div class=&quot;notif-item&quot;><div class=&quot;notif-icon&quot; style=&quot;background:var(--amber-lt);color:var(--amber);&quot;><i class=&quot;ti ti-parking&quot;></i></div><div><div class=&quot;notif-text&quot;>Kapasitas parkir mencapai <strong>78%</strong></div><div class=&quot;notif-time&quot;>5 menit lalu</div></div></div>
+  <div class=&quot;notif-item&quot;><div class=&quot;notif-icon&quot; style=&quot;background:var(--blue-lt);color:var(--blue);&quot;><i class=&quot;ti ti-ticket&quot;></i></div><div><div class=&quot;notif-text&quot;>Tiket <strong>20250605-00134</strong> selesai</div><div class=&quot;notif-time&quot;>23 menit lalu</div></div></div>
+  <div class=&quot;notif-item&quot;><div class=&quot;notif-icon&quot; style=&quot;background:var(--red-lt);color:var(--red);&quot;><i class=&quot;ti ti-alert-circle&quot;></i></div><div><div class=&quot;notif-text&quot;>Tiket <strong>20250605-00128</strong> dibatalkan</div><div class=&quot;notif-time&quot;>1 jam lalu</div></div></div>
+  <div class=&quot;notif-item&quot;><div class=&quot;notif-icon&quot; style=&quot;background:var(--green-lt);color:var(--green);&quot;><i class=&quot;ti ti-user-check&quot;></i></div><div><div class=&quot;notif-text&quot;><strong>Ahmad Fauzi</strong> login ke sistem</div><div class=&quot;notif-time&quot;>2 jam lalu</div></div></div>
+</div>
+
+<!-- ── MODAL: DETAIL TIKET ── -->
+<div class=&quot;modal-overlay hidden&quot; id=&quot;modal-detail&quot;>
+  <div class=&quot;modal&quot;>
+    <div class=&quot;modal-header&quot;><div class=&quot;modal-title&quot;><i class=&quot;ti ti-ticket&quot; style=&quot;margin-right:7px;&quot;></i>Detail Tiket Parkir</div><button class=&quot;modal-close&quot; onclick=&quot;closeModal('modal-detail')&quot;><i class=&quot;ti ti-x&quot;></i></button></div>
+    <div class=&quot;modal-body&quot; id=&quot;modal-detail-body&quot;></div>
+    <div class=&quot;modal-footer&quot;>
+      <button class=&quot;btn&quot; onclick=&quot;closeModal('modal-detail')&quot;><i class=&quot;ti ti-x&quot;></i> Tutup</button>
+      <button class=&quot;btn btn-primary&quot; id=&quot;btn-cetak-ulang&quot;><i class=&quot;ti ti-printer&quot;></i> Cetak Ulang</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: TAMBAH PETUGAS ── -->
+<div class=&quot;modal-overlay hidden&quot; id=&quot;modal-tambah-petugas&quot;>
+  <div class=&quot;modal&quot;>
+    <div class=&quot;modal-header&quot;><div class=&quot;modal-title&quot;><i class=&quot;ti ti-user-plus&quot; style=&quot;margin-right:7px;&quot;></i>Tambah Petugas Baru</div><button class=&quot;modal-close&quot; onclick=&quot;closeModal('modal-tambah-petugas')&quot;><i class=&quot;ti ti-x&quot;></i></button></div>
+    <div class=&quot;modal-body&quot;>
+      <div class=&quot;form-grid&quot;>
+        <div class=&quot;form-group&quot; style=&quot;grid-column:span 2;&quot;><label class=&quot;form-label&quot;>Nama Lengkap</label><input class=&quot;form-input&quot; id=&quot;p-nama&quot; placeholder=&quot;cth: Rudi Hartono&quot; /></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Role</label><select class=&quot;form-input&quot; id=&quot;p-role&quot;><option>Petugas Masuk</option><option>Petugas Keluar</option><option>Admin Parkir</option><option>Supervisor</option></select></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Pos / Gerbang</label><select class=&quot;form-input&quot; id=&quot;p-pos&quot;><option>Gerbang Utara</option><option>Gerbang Selatan</option><option>Gerbang Timur</option><option>Pos Induk</option></select></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Username</label><input class=&quot;form-input&quot; id=&quot;p-user&quot; placeholder=&quot;cth: rudi.h&quot; /></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Password</label><input class=&quot;form-input&quot; type=&quot;password&quot; id=&quot;p-pass&quot; placeholder=&quot;Min. 8 karakter&quot; /></div>
+      </div>
+    </div>
+    <div class=&quot;modal-footer&quot;><button class=&quot;btn&quot; onclick=&quot;closeModal('modal-tambah-petugas')&quot;>Batal</button><button class=&quot;btn btn-primary&quot; onclick=&quot;savePetugas()&quot;><i class=&quot;ti ti-check&quot;></i> Simpan</button></div>
+  </div>
+</div>
+
+<!-- ── MODAL: EDIT PETUGAS ── -->
+<div class=&quot;modal-overlay hidden&quot; id=&quot;modal-edit-petugas&quot;>
+  <div class=&quot;modal&quot;>
+    <div class=&quot;modal-header&quot;><div class=&quot;modal-title&quot;><i class=&quot;ti ti-edit&quot; style=&quot;margin-right:7px;&quot;></i>Edit Petugas</div><button class=&quot;modal-close&quot; onclick=&quot;closeModal('modal-edit-petugas')&quot;><i class=&quot;ti ti-x&quot;></i></button></div>
+    <div class=&quot;modal-body&quot; id=&quot;modal-edit-petugas-body&quot;></div>
+    <div class=&quot;modal-footer&quot;><button class=&quot;btn&quot; onclick=&quot;closeModal('modal-edit-petugas')&quot;>Batal</button><button class=&quot;btn btn-primary&quot; id=&quot;btn-save-edit-petugas&quot;><i class=&quot;ti ti-check&quot;></i> Simpan</button></div>
+  </div>
+</div>
+
+<!-- ── MODAL: HAPUS PETUGAS ── -->
+<div class=&quot;modal-overlay hidden&quot; id=&quot;modal-hapus-petugas&quot; style=&quot;z-index:1100;&quot;>
+  <div class=&quot;modal&quot; style=&quot;max-width:380px;&quot;>
+    <div class=&quot;modal-header&quot;><div class=&quot;modal-title&quot; style=&quot;color:var(--red);&quot;><i class=&quot;ti ti-trash&quot; style=&quot;margin-right:7px;&quot;></i>Hapus Petugas</div><button class=&quot;modal-close&quot; onclick=&quot;closeModal('modal-hapus-petugas')&quot;><i class=&quot;ti ti-x&quot;></i></button></div>
+    <div class=&quot;modal-body&quot;><p style=&quot;color:var(--text-2);font-size:13.5px;&quot;>Apakah Anda yakin ingin menghapus <strong id=&quot;hapus-nama&quot;></strong>? Tindakan ini tidak dapat dibatalkan.</p></div>
+    <div class=&quot;modal-footer&quot;><button class=&quot;btn&quot; onclick=&quot;closeModal('modal-hapus-petugas')&quot;>Batal</button><button class=&quot;btn btn-danger&quot; id=&quot;btn-konfirm-hapus&quot;><i class=&quot;ti ti-trash&quot;></i> Ya, Hapus</button></div>
+  </div>
+</div>
+
+<!-- ── MODAL: TAMBAH TARIF ── -->
+<div class=&quot;modal-overlay hidden&quot; id=&quot;modal-tambah-tarif&quot;>
+  <div class=&quot;modal&quot;>
+    <div class=&quot;modal-header&quot;><div class=&quot;modal-title&quot;><i class=&quot;ti ti-currency-dollar&quot; style=&quot;margin-right:7px;&quot;></i>Tambah Tarif Baru</div><button class=&quot;modal-close&quot; onclick=&quot;closeModal('modal-tambah-tarif')&quot;><i class=&quot;ti ti-x&quot;></i></button></div>
+    <div class=&quot;modal-body&quot;>
+      <div class=&quot;form-grid&quot;>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Jenis Kendaraan</label><select class=&quot;form-input&quot; id=&quot;t-jenis&quot;><option>Motor</option><option>Mobil</option><option>Kendaraan Besar</option><option>Kendaraan Khusus</option></select></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Tipe Tarif</label><select class=&quot;form-input&quot; id=&quot;t-tipe&quot;><option>Progresif</option><option>Flat</option></select></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Tarif Dasar (Rp)</label><input class=&quot;form-input&quot; id=&quot;t-dasar&quot; type=&quot;number&quot; placeholder=&quot;cth: 2000&quot; /></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Tarif Per Jam (Rp)</label><input class=&quot;form-input&quot; id=&quot;t-perjam&quot; type=&quot;number&quot; placeholder=&quot;cth: 1000&quot; /></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Tarif Maks/Hari (Rp)</label><input class=&quot;form-input&quot; id=&quot;t-maks&quot; type=&quot;number&quot; placeholder=&quot;cth: 10000&quot; /></div>
+        <div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Gratis (menit)</label><input class=&quot;form-input&quot; id=&quot;t-gratis&quot; type=&quot;number&quot; value=&quot;15&quot; /></div>
+      </div>
+    </div>
+    <div class=&quot;modal-footer&quot;><button class=&quot;btn&quot; onclick=&quot;closeModal('modal-tambah-tarif')&quot;>Batal</button><button class=&quot;btn btn-primary&quot; onclick=&quot;saveTarif()&quot;><i class=&quot;ti ti-check&quot;></i> Simpan</button></div>
+  </div>
+</div>
+
+<script>
+// ══ SHARED DATA ══
+let tickets = [
+  { no:'20250605-00134', jenis:'Mobil',          masuk:'08:12', keluar:'10:45', durasi:'2j 33m', status:'SELESAI', petugas:'Dewi Rahayu' },
+  { no:'20250605-00133', jenis:'Motor',           masuk:'08:45', keluar:'-',    durasi:'-',       status:'AKTIF',   petugas:'Budi Santoso' },
+  { no:'20250605-00132', jenis:'Motor',           masuk:'07:30', keluar:'09:00',durasi:'1j 30m',  status:'SELESAI', petugas:'Budi Santoso' },
+  { no:'20250605-00131', jenis:'Mobil',           masuk:'07:15', keluar:'-',    durasi:'-',       status:'AKTIF',   petugas:'Dewi Rahayu' },
+  { no:'20250605-00130', jenis:'Kendaraan Besar', masuk:'06:50', keluar:'-',    durasi:'-',       status:'AKTIF',   petugas:'Budi Santoso' },
+  { no:'20250605-00129', jenis:'Motor',           masuk:'06:30', keluar:'08:45',durasi:'2j 15m',  status:'SELESAI', petugas:'Budi Santoso' },
+  { no:'20250605-00128', jenis:'Mobil',           masuk:'06:15', keluar:'-',    durasi:'-',       status:'BATAL',   petugas:'Dewi Rahayu' },
+  { no:'20250605-00127', jenis:'Motor',           masuk:'05:50', keluar:'07:20',durasi:'1j 30m',  status:'SELESAI', petugas:'Budi Santoso' },
+];
+let petugas = [
+  { nama:'Budi Santoso', inisial:'BS', role:'Petugas Masuk',  pos:'Gerbang Utara',   aktif:true,  login:'07:00' },
+  { nama:'Dewi Rahayu',  inisial:'DR', role:'Petugas Keluar', pos:'Gerbang Selatan', aktif:true,  login:'07:05' },
+  { nama:'Ahmad Fauzi',  inisial:'AF', role:'Admin Parkir',   pos:'Pos Induk',       aktif:true,  login:'08:00' },
+  { nama:'Siti Marlina', inisial:'SM', role:'Petugas Masuk',  pos:'Gerbang Timur',   aktif:false, login:'Kemarin 15:00' },
+];
+let tarifData = [
+  { jenis:'Motor',           tipe:'Progresif', dasar:'Rp 2.000', perjam:'Rp 1.000', maks:'Rp 10.000', gratis:15, aktif:true },
+  { jenis:'Mobil',           tipe:'Progresif', dasar:'Rp 3.000', perjam:'Rp 2.000', maks:'Rp 20.000', gratis:15, aktif:true },
+  { jenis:'Kendaraan Besar', tipe:'Flat',      dasar:'Rp 10.000',perjam:'—',         maks:'—',          gratis:0,  aktif:true },
+];
+const hourlyData = [2,5,12,18,22,15,10,14,18,12,8,6,9,11,14,12,9,7,5,4,3,2,1,1];
+
+// ══ AUTH ══
+let currentRole = 'admin';
+const users = {
+  admin:    { user:'admin',    pass:'admin123', nama:'Super Admin', role:'IT Manager', inisial:'SA', pos:'Pos Induk' },
+  operator: { user:'budi',     pass:'budi123',  nama:'Budi Santoso', role:'Petugas Masuk', inisial:'BS', pos:'Gerbang Utara' },
+};
+
+function selectRole(r) {
+  currentRole = r;
+  document.getElementById('role-admin').classList.toggle('selected', r==='admin');
+  document.getElementById('role-operator').classList.toggle('selected', r==='operator');
+  document.getElementById('login-user').value = r==='admin' ? 'admin' : 'budi';
+  document.getElementById('login-pass').value = '';
+}
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const expected = users[currentRole];
+  if (u !== expected.user || (p !== expected.pass &amp;&amp; p !== '••••••••')) {
+    showToast('Username atau password salah', 'error'); return;
+  }
+  document.getElementById('screen-login').classList.remove('active');
+  if (currentRole === 'admin') {
+    document.getElementById('screen-admin').classList.add('active');
+    initAdmin();
+  } else {
+    document.getElementById('screen-operator').classList.add('active');
+    initOperator(expected);
+  }
+}
+
+function doLogout() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-login').classList.add('active');
+  showToast('Berhasil logout dari sistem', '');
+}
+
+// ══ TOAST ══
+function showToast(msg, type='') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' toast-'+type : '');
+  const icon = type==='success'?'ti-circle-check':type==='error'?'ti-circle-x':type==='warn'?'ti-alert-triangle':'ti-info-circle';
+  t.innerHTML = `<i class=&quot;ti ${icon}&quot; style=&quot;font-size:16px;flex-shrink:0;&quot;></i> ${msg}`;
+  c.appendChild(t);
+  setTimeout(()=>{ t.style.animation='toastOut .2s ease forwards'; setTimeout(()=>t.remove(),200); },3000);
+}
+
+// ══ MODAL ══
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); document.body.style.overflow='hidden'; }
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); document.body.style.overflow=''; }
+document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) { e.target.classList.add('hidden'); document.body.style.overflow=''; } });
+
+// ══ NOTIF ══
+function toggleNotif(e) { e.stopPropagation(); document.getElementById('notif-dropdown').classList.toggle('hidden'); }
+function markAllRead() { document.getElementById('notif-dot').style.display='none'; document.getElementById('notif-dropdown').classList.add('hidden'); showToast('Semua notifikasi telah dibaca','success'); }
+document.addEventListener('click', e => { const d=document.getElementById('notif-dropdown'); if(d&amp;&amp;!d.contains(e.target)) d.classList.add('hidden'); });
+
+// ══ HELPERS ══
+function badgeClass(s) { return s==='AKTIF'?'badge-active':s==='SELESAI'?'badge-done':'badge-cancel'; }
+function fmtRp(n) { return 'Rp '+Number(n).toLocaleString('id-ID'); }
+function nowTime() { const n=new Date(); return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0'); }
+
+// ══════════════════════ ADMIN ══════════════════════
+function initAdmin() {
+  updateStats(); renderRecentTable(); renderPetugasAktif();
+  renderHourlyChart('hourly-chart'); renderHourlyChart('laporan-hour-chart');
+  renderTiketTable(); renderPetugasTable(); renderTarifTable(); renderLaporanChart();
+}
+
+function adminPage(id, el) {
+  document.querySelectorAll('#screen-admin .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#screen-admin .nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('admin-page-'+id).classList.add('active');
+  el.classList.add('active');
+  const titles={dashboard:'Dashboard',tiket:'Tiket Parkir',laporan:'Laporan',petugas:'Manajemen Petugas',tarif:'Konfigurasi Tarif',pengaturan:'Pengaturan Sistem'};
+  document.getElementById('admin-page-title').textContent = titles[id]||id;
+}
+
+function updateStats() {
+  const dalam=tickets.filter(t=>t.status==='AKTIF').length;
+  const masuk=tickets.filter(t=>t.status!=='BATAL').length;
+  const keluar=tickets.filter(t=>t.status==='SELESAI').length;
+  const sisa=120-dalam;
+  ['stat-dalam','stat-masuk','stat-keluar'].forEach((id,i)=>{ const el=document.getElementById(id); if(el) el.textContent=[dalam,masuk,keluar][i]; });
+  const pctEl=document.getElementById('kapasitas-pct'); if(pctEl) pctEl.textContent=Math.round(sisa/120*100)+'% tersedia';
+}
+
+function renderRecentTable() {
+  const el=document.getElementById('recent-table'); if(!el) return;
+  el.innerHTML=tickets.slice(0,6).map(t=>`<tr><td class=&quot;mono&quot;>${t.no}</td><td>${t.jenis}</td><td>${t.masuk}</td><td><span class=&quot;badge ${badgeClass(t.status)}&quot;>${t.status}</span></td></tr>`).join('');
+}
+
+function renderPetugasAktif() {
+  const el=document.getElementById('petugas-aktif'); if(!el) return;
+  const colors=['av-blue','av-green','av-amber'];
+  el.innerHTML=petugas.filter(p=>p.aktif).map((p,i)=>`<div class=&quot;petugas-row&quot;><div class=&quot;avatar ${colors[i%colors.length]}&quot;>${p.inisial}</div><div style=&quot;flex:1;&quot;><div class=&quot;petugas-name&quot;>${p.nama}</div><div class=&quot;petugas-pos&quot;>${p.pos}</div></div><div class=&quot;status-dot dot-online&quot;></div></div>`).join('');
+}
+
+function renderHourlyChart(id) {
+  const w=document.getElementById(id); if(!w) return;
+  const max=Math.max(...hourlyData);
+  const isShort=id==='hourly-chart';
+  const show=isShort?hourlyData.slice(5,17):hourlyData;
+  const labels=isShort?Array.from({length:12},(_,i)=>(i+5)+'h'):Array.from({length:24},(_,i)=>i%6===0?i+'h':'');
+  w.innerHTML=show.map((v,i)=>`<div class=&quot;bar-col&quot;><div class=&quot;bar&quot; style=&quot;height:${Math.round(v/max*88)+5}px;&quot; title=&quot;${v} kendaraan&quot;></div><div class=&quot;bar-lbl&quot;>${labels[i]}</div></div>`).join('');
+}
+
+let filterText='',filterStatusVal='',filterJenisVal='';
+function renderTiketTable() {
+  const filtered=tickets.filter(t=>(t.no.includes(filterText)||t.jenis.toLowerCase().includes(filterText.toLowerCase()))&amp;&amp;(filterStatusVal===''||t.status===filterStatusVal)&amp;&amp;(filterJenisVal===''||t.jenis===filterJenisVal));
+  const el=document.getElementById('tiket-table'); if(!el) return;
+  if(!filtered.length){el.innerHTML=`<tr><td colspan=&quot;7&quot; style=&quot;text-align:center;padding:32px;color:var(--text-3);&quot;><i class=&quot;ti ti-ticket&quot; style=&quot;font-size:24px;display:block;margin-bottom:6px;&quot;></i>Tidak ada tiket ditemukan</td></tr>`;return;}
+  el.innerHTML=filtered.map(t=>`<tr><td class=&quot;mono&quot;>${t.no}</td><td>${t.jenis}</td><td>${t.masuk}</td><td>${t.keluar}</td><td>${t.durasi}</td><td><span class=&quot;badge ${badgeClass(t.status)}&quot;>${t.status}</span></td><td><button class=&quot;btn btn-sm&quot; onclick=&quot;showDetail('${t.no}')&quot;><i class=&quot;ti ti-eye&quot;></i> Detail</button></td></tr>`).join('');
+}
+function filterTickets(v){filterText=v;renderTiketTable()}
+function filterStatus(v){filterStatusVal=v;renderTiketTable()}
+function filterJenis(v){filterJenisVal=v;renderTiketTable()}
+
+function renderPetugasTable() {
+  const el=document.getElementById('petugas-table'); if(!el) return;
+  const colors=['av-blue','av-green','av-amber','av-red'];
+  el.innerHTML=petugas.map((p,i)=>`<tr><td><div style=&quot;display:flex;align-items:center;gap:9px;&quot;><div class=&quot;avatar ${colors[i%colors.length]}&quot;>${p.inisial}</div><div style=&quot;font-weight:500;&quot;>${p.nama}</div></div></td><td>${p.role}</td><td>${p.pos}</td><td><span class=&quot;badge ${p.aktif?'badge-done':'badge-cancel'}&quot;>${p.aktif?'Aktif':'Nonaktif'}</span></td><td style=&quot;color:var(--text-2);font-size:12px;&quot;>Hari ini ${p.login}</td><td><div style=&quot;display:flex;gap:4px;&quot;><button class=&quot;btn btn-sm&quot; onclick=&quot;editPetugas(${i})&quot;><i class=&quot;ti ti-edit&quot;></i></button><button class=&quot;btn btn-sm btn-danger&quot; onclick=&quot;hapusPetugas(${i})&quot;><i class=&quot;ti ti-trash&quot;></i></button></div></td></tr>`).join('');
+}
+
+function renderTarifTable() {
+  const el=document.getElementById('tarif-table'); if(!el) return;
+  el.innerHTML=tarifData.map(t=>`<tr><td style=&quot;font-weight:500;&quot;>${t.jenis}</td><td><span class=&quot;badge badge-active&quot;>${t.tipe}</span></td><td>${t.dasar}</td><td>${t.perjam}</td><td>${t.maks}</td><td>${t.gratis} menit</td><td><span class=&quot;badge ${t.aktif?'badge-done':'badge-cancel'}&quot;>${t.aktif?'Berlaku':'Nonaktif'}</span></td></tr>`).join('');
+}
+
+function renderLaporanChart() {
+  const el=document.getElementById('laporan-chart'); if(!el) return;
+  const data=[{label:'Motor',val:68,color:'var(--blue)'},{label:'Mobil',val:52,color:'#1A9FCC'},{label:'Kend. Besar',val:14,color:'#0D7AA5'}];
+  const max=Math.max(...data.map(d=>d.val));
+  el.innerHTML=data.map(d=>`<div style=&quot;display:flex;align-items:center;gap:10px;font-size:13px;&quot;><div style=&quot;width:90px;color:var(--text-2);font-size:12px;&quot;>${d.label}</div><div style=&quot;flex:1;background:var(--bg);border-radius:4px;height:20px;overflow:hidden;border:1px solid var(--border-lt);&quot;><div style=&quot;width:${Math.round(d.val/max*100)}%;background:${d.color};height:100%;border-radius:4px;transition:width .4s;&quot;></div></div><div style=&quot;width:28px;font-weight:600;&quot;>${d.val}</div></div>`).join('');
+}
+
+const lapData={harian:{total:134,durasi:'2j 7m',puncak:'09:00'},mingguan:{total:876,durasi:'2j 22m',puncak:'08:30'},bulanan:{total:3412,durasi:'2j 15m',puncak:'09:00'}};
+function switchTab(mode,el){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); el.classList.add('active');
+  const d=lapData[mode];
+  document.getElementById('lap-total').textContent=d.total.toLocaleString('id-ID');
+  document.getElementById('lap-durasi').textContent=d.durasi;
+  document.getElementById('lap-puncak').textContent=d.puncak;
+}
+
+function showDetail(no) {
+  const t=tickets.find(x=>x.no===no); if(!t) return;
+  const tarif=t.status==='SELESAI'?'Rp 4.000':t.status==='AKTIF'?'Menunggu keluar':'-';
+  document.getElementById('modal-detail-body').innerHTML=`
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>No. Tiket</span><span class=&quot;info-val mono&quot;>${t.no}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Jenis Kendaraan</span><span class=&quot;info-val&quot;>${t.jenis}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Waktu Masuk</span><span class=&quot;info-val&quot;>${t.masuk}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Waktu Keluar</span><span class=&quot;info-val&quot;>${t.keluar}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Durasi</span><span class=&quot;info-val&quot;>${t.durasi}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Petugas</span><span class=&quot;info-val&quot;>${t.petugas||'-'}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Status</span><span class=&quot;info-val&quot;><span class=&quot;badge ${badgeClass(t.status)}&quot;>${t.status}</span></span></div>
+    <div class=&quot;tarif-row&quot; style=&quot;margin-top:14px;&quot;><span style=&quot;color:var(--blue-dk);font-size:13px;font-weight:500;&quot;>Total Tarif</span><span style=&quot;font-size:17px;font-weight:700;color:var(--blue);&quot;>${tarif}</span></div>`;
+  document.getElementById('btn-cetak-ulang').onclick=()=>{ showToast('Perintah cetak ulang dikirim ke printer — '+t.no,'success'); closeModal('modal-detail'); };
+  openModal('modal-detail');
+}
+
+function openNewTicket(){const f=document.getElementById('new-ticket-form');f.style.display=f.style.display==='none'?'block':'none';}
+let ticketCounter=135;
+function createTicket(){
+  const jenis=document.getElementById('vtype').value;
+  const no='20250605-'+String(ticketCounter++).padStart(5,'0');
+  tickets.unshift({no,jenis,masuk:nowTime(),keluar:'-',durasi:'-',status:'AKTIF',petugas:'Super Admin'});
+  updateStats();renderTiketTable();renderRecentTable();
+  document.getElementById('new-ticket-form').style.display='none';
+  showToast('Tiket '+no+' berhasil dibuat','success');
+}
+
+function simulateScan(mode){
+  const res=document.getElementById('scan-result'); res.classList.add('show');
+  if(mode==='valid'){
+    res.innerHTML=`<div class=&quot;result-header&quot;><div class=&quot;result-icon result-valid&quot;><i class=&quot;ti ti-circle-check&quot;></i></div><div><div style=&quot;font-weight:600;color:var(--green);&quot;>TIKET VALID</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Siap validasi keluar</div></div></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>No. Tiket</span><span class=&quot;info-val mono&quot;>20250605-00133</span></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Jenis Kendaraan</span><span class=&quot;info-val&quot;>Motor</span></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Waktu Masuk</span><span class=&quot;info-val&quot;>08:45</span></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Durasi Parkir</span><span class=&quot;info-val&quot;>2 jam 18 menit</span></div><div class=&quot;tarif-row&quot;><span style=&quot;color:var(--blue-dk);font-size:13px;font-weight:500;&quot;>Total Tarif</span><span style=&quot;font-size:18px;font-weight:700;color:var(--blue);&quot;>Rp 4.000</span></div><button class=&quot;btn btn-success&quot; style=&quot;width:100%;justify-content:center;padding:11px;&quot; onclick=&quot;confirmExit('scan-result')&quot;><i class=&quot;ti ti-check&quot;></i> IZINKAN KELUAR</button>`;
+  } else {
+    res.innerHTML=`<div class=&quot;result-header&quot;><div class=&quot;result-icon result-invalid&quot;><i class=&quot;ti ti-circle-x&quot;></i></div><div><div style=&quot;font-weight:600;color:var(--red);&quot;>TIKET TIDAK VALID</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Tiket sudah digunakan atau tidak ditemukan</div></div></div><div style=&quot;color:var(--text-2);font-size:13px;margin-bottom:14px;line-height:1.6;&quot;>Tiket ini sudah tercatat keluar atau tidak terdaftar dalam sistem.</div><button class=&quot;btn&quot; style=&quot;width:100%;justify-content:center;&quot; onclick=&quot;document.getElementById('scan-result').classList.remove('show')&quot;><i class=&quot;ti ti-qrcode&quot;></i> Scan Ulang</button>`;
+  }
+}
+
+function confirmExit(containerId){
+  const t=tickets.find(x=>x.no==='20250605-00133');
+  if(t){t.keluar=nowTime();t.durasi='2j 18m';t.status='SELESAI';}
+  updateStats();renderRecentTable();
+  document.getElementById(containerId).innerHTML=`<div style=&quot;text-align:center;padding:20px;&quot;><div style=&quot;width:52px;height:52px;border-radius:50%;background:var(--green-lt);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px;&quot;><i class=&quot;ti ti-circle-check-filled&quot;></i></div><div style=&quot;font-weight:600;font-size:15px;margin-bottom:5px;&quot;>Keluar Dikonfirmasi</div><div style=&quot;font-size:13px;color:var(--text-2);&quot;>Tiket 20250605-00133 diselesaikan.</div><button class=&quot;btn&quot; style=&quot;margin-top:14px;&quot; onclick=&quot;document.getElementById('${containerId}').classList.remove('show');document.getElementById('${containerId}').innerHTML='';&quot;><i class=&quot;ti ti-qrcode&quot;></i> Scan Berikutnya</button></div>`;
+  showToast('Kendaraan berhasil keluar — Rp 4.000 diterima','success');
+  opStatKeluar++;updateOpStats();renderOpRiwayat();
+}
+
+function manualValidate(){
+  const v=document.getElementById('manual-input').value.trim();
+  if(!v){showToast('Masukkan nomor tiket','warn');return;}
+  const found=tickets.find(t=>t.no===v);
+  simulateScan(found&amp;&amp;found.status==='AKTIF'?'valid':'invalid');
+}
+
+function exportCSV(){
+  const rows=tickets.map(t=>[t.no,t.jenis,t.masuk,t.keluar,t.durasi,t.status].join(','));
+  const csv=['No. Tiket,Jenis,Masuk,Keluar,Durasi,Status',...rows].join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='tiket-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  showToast('File CSV berhasil diunduh','success');
+}
+function exportLaporan(type){
+  if(type==='pdf'){window.print();showToast('Dialog cetak dibuka','');}
+  else{const csv='Periode,Total,Durasi,Puncak\nHarian,134,2j 7m,09:00\nMingguan,876,2j 22m,08:30\nBulanan,3412,2j 15m,09:00';const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='laporan.csv';a.click();showToast('File Excel (CSV) diunduh','success');}
+}
+
+function editPetugas(idx){
+  const p=petugas[idx];
+  document.getElementById('modal-edit-petugas-body').innerHTML=`<div class=&quot;form-grid&quot;><div class=&quot;form-group&quot; style=&quot;grid-column:span 2;&quot;><label class=&quot;form-label&quot;>Nama Lengkap</label><input class=&quot;form-input&quot; id=&quot;ep-nama&quot; value=&quot;${p.nama}&quot; /></div><div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Role</label><select class=&quot;form-input&quot; id=&quot;ep-role&quot;>${['Petugas Masuk','Petugas Keluar','Admin Parkir','Supervisor'].map(r=>`<option${r===p.role?' selected':''}>${r}</option>`).join('')}</select></div><div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Pos</label><select class=&quot;form-input&quot; id=&quot;ep-pos&quot;>${['Gerbang Utara','Gerbang Selatan','Gerbang Timur','Pos Induk'].map(r=>`<option${r===p.pos?' selected':''}>${r}</option>`).join('')}</select></div><div class=&quot;form-group&quot;><label class=&quot;form-label&quot;>Status</label><select class=&quot;form-input&quot; id=&quot;ep-aktif&quot;><option value=&quot;1&quot;${p.aktif?' selected':''}>Aktif</option><option value=&quot;0&quot;${!p.aktif?' selected':''}>Nonaktif</option></select></div></div>`;
+  document.getElementById('btn-save-edit-petugas').onclick=()=>{
+    petugas[idx].nama=document.getElementById('ep-nama').value.trim()||petugas[idx].nama;
+    petugas[idx].role=document.getElementById('ep-role').value;
+    petugas[idx].pos=document.getElementById('ep-pos').value;
+    petugas[idx].aktif=document.getElementById('ep-aktif').value==='1';
+    renderPetugasTable();renderPetugasAktif();closeModal('modal-edit-petugas');
+    showToast('Data petugas diperbarui','success');
+  };
+  openModal('modal-edit-petugas');
+}
+function hapusPetugas(idx){
+  document.getElementById('hapus-nama').textContent=petugas[idx].nama;
+  document.getElementById('btn-konfirm-hapus').onclick=()=>{
+    const n=petugas[idx].nama; petugas.splice(idx,1);
+    renderPetugasTable();renderPetugasAktif();closeModal('modal-hapus-petugas');
+    showToast('Petugas '+n+' dihapus','success');
+  };
+  openModal('modal-hapus-petugas');
+}
+function savePetugas(){
+  const nama=document.getElementById('p-nama').value.trim();
+  const user=document.getElementById('p-user').value.trim();
+  const pass=document.getElementById('p-pass').value;
+  if(!nama){showToast('Nama harus diisi','error');return;}
+  if(!user){showToast('Username harus diisi','error');return;}
+  if(pass.length<8){showToast('Password minimal 8 karakter','error');return;}
+  const inisial=nama.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  petugas.push({nama,inisial,role:document.getElementById('p-role').value,pos:document.getElementById('p-pos').value,aktif:true,login:'-'});
+  renderPetugasTable();renderPetugasAktif();closeModal('modal-tambah-petugas');
+  ['p-nama','p-user','p-pass'].forEach(id=>document.getElementById(id).value='');
+  showToast('Petugas '+nama+' ditambahkan','success');
+}
+function saveTarif(){
+  const jenis=document.getElementById('t-jenis').value;
+  const dasar=parseInt(document.getElementById('t-dasar').value);
+  if(!dasar){showToast('Tarif dasar harus diisi','error');return;}
+  tarifData.push({jenis,tipe:document.getElementById('t-tipe').value,dasar:fmtRp(dasar),perjam:fmtRp(parseInt(document.getElementById('t-perjam').value)||0),maks:fmtRp(parseInt(document.getElementById('t-maks').value)||0),gratis:parseInt(document.getElementById('t-gratis').value)||0,aktif:true});
+  renderTarifTable();closeModal('modal-tambah-tarif');
+  ['t-dasar','t-perjam','t-maks'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('t-gratis').value='15';
+  showToast('Tarif '+jenis+' ditambahkan','success');
+}
+function saveSettings(btn){
+  const card=btn.closest('.card');
+  const t=(card.querySelector('.card-title')||{}).textContent||'Pengaturan';
+  showToast(t.replace(/\s+/,' ').trim()+' berhasil disimpan','success');
+}
+function doBackup(){
+  const btn=document.querySelector('[onclick=&quot;doBackup()&quot;]');
+  if(btn){btn.innerHTML='<i class=&quot;ti ti-loader&quot; style=&quot;animation:spin 1s linear infinite;&quot;></i> Membackup...';btn.disabled=true;}
+  if(!document.getElementById('spin-style')){const s=document.createElement('style');s.id='spin-style';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}
+  setTimeout(()=>{ if(btn){btn.innerHTML='<i class=&quot;ti ti-database-export&quot;></i> Backup Sekarang';btn.disabled=false;} showToast('Backup selesai — '+new Date().toLocaleString('id-ID'),'success'); },2000);
+}
+
+// ══════════════════════ OPERATOR ══════════════════════
+let selectedVehicle = 'Motor';
+let opStatMasuk = 0, opStatKeluar = 0;
+let opShiftTickets = [];
+
+function initOperator(u) {
+  document.getElementById('op-name').textContent = u.nama;
+  document.getElementById('op-pos').textContent = u.pos;
+  document.getElementById('op-avatar').textContent = u.inisial;
+  document.getElementById('op-shift-name').textContent = u.nama;
+  document.getElementById('op-shift-pos').textContent = u.pos;
+  const now = new Date();
+  document.getElementById('op-shift-date').textContent = now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long'});
+  opStatMasuk=0; opStatKeluar=0; opShiftTickets=[];
+  updateOpStats(); renderOpRecentTable(); renderOpRiwayat();
+  startClock();
+}
+
+function startClock() {
+  function tick(){const n=new Date();const t=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0')+':'+n.getSeconds().toString().padStart(2,'0');const el=document.getElementById('op-clock');if(el)el.textContent=t;}
+  tick(); setInterval(tick,1000);
+}
+
+function updateOpStats(){
+  const dalam=tickets.filter(t=>t.status==='AKTIF').length;
+  ['op-stat-masuk','op-rw-masuk'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=opStatMasuk;});
+  ['op-stat-keluar','op-rw-keluar'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=opStatKeluar;});
+  ['op-stat-dalam2'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=dalam;});
+  const slotEl=document.getElementById('op-slot-tersedia');if(slotEl)slotEl.textContent=120-dalam;
+  const motorCount=opShiftTickets.filter(t=>t.jenis==='Motor').length;
+  const mEl=document.getElementById('op-rw-motor');if(mEl)mEl.textContent=motorCount;
+}
+
+function opPage(id, el) {
+  document.querySelectorAll('#screen-operator .page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#screen-operator .nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('op-page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={home:'Beranda',masuk:'Kendaraan Masuk',keluar:'Kendaraan Keluar',riwayat:'Riwayat Shift',tarif:'Info Tarif','tarif-info':'Info Tarif'};
+  document.getElementById('op-page-title').textContent=titles[id]||id;
+  if(id==='riwayat'){renderOpRiwayat();updateOpStats();}
+}
+
+function selectVehicle(v){
+  selectedVehicle=v;
+  ['motor','mobil','besar'].forEach(k=>{document.getElementById('vopt-'+k).classList.remove('selected');});
+  const map={'Motor':'motor','Mobil':'mobil','Kendaraan Besar':'besar'};
+  document.getElementById('vopt-'+map[v]).classList.add('selected');
+}
+
+let opTicketCounter=200;
+function opCreateTicket(){
+  const no='20250605-OP-'+String(opTicketCounter++).padStart(3,'0');
+  const jam=nowTime();
+  const operatorName=document.getElementById('op-name').textContent;
+  const t={no,jenis:selectedVehicle,masuk:jam,keluar:'-',durasi:'-',status:'AKTIF',petugas:operatorName};
+  tickets.unshift(t);
+  opShiftTickets.unshift(t);
+  opStatMasuk++;
+  updateOpStats(); renderOpRecentTable();
+
+  document.getElementById('op-tiket-info').innerHTML=`
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>No. Tiket</span><span class=&quot;info-val mono&quot;>${no}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Jenis</span><span class=&quot;info-val&quot;>${selectedVehicle}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Waktu Masuk</span><span class=&quot;info-val&quot;>${jam}</span></div>
+    <div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Tarif Dasar</span><span class=&quot;info-val&quot;>${selectedVehicle==='Motor'?'Rp 2.000':selectedVehicle==='Mobil'?'Rp 3.000':'Rp 10.000'}</span></div>`;
+  document.getElementById('op-tiket-result').style.display='block';
+  document.getElementById('op-catatan').value='';
+  showToast('Tiket '+no+' dicetak — palang terbuka','success');
+}
+
+function renderOpRecentTable(){
+  const el=document.getElementById('op-recent-table'); if(!el) return;
+  const list=opShiftTickets.slice(0,8);
+  if(!list.length){el.innerHTML=`<tr><td colspan=&quot;5&quot; style=&quot;text-align:center;padding:24px;color:var(--text-3);&quot;>Belum ada transaksi shift ini</td></tr>`;return;}
+  el.innerHTML=list.map(t=>`<tr><td class=&quot;mono&quot;>${t.no}</td><td>${t.jenis}</td><td>${t.masuk}</td><td>${t.keluar==='- '||t.keluar==='-'?'<span style=&quot;color:var(--text-3);&quot;>—</span>':t.keluar}</td><td><span class=&quot;badge ${badgeClass(t.status)}&quot;>${t.status}</span></td></tr>`).join('');
+}
+
+function renderOpRiwayat(){
+  const el=document.getElementById('op-riwayat-table'); if(!el) return;
+  if(!opShiftTickets.length){el.innerHTML=`<tr><td colspan=&quot;5&quot; style=&quot;text-align:center;padding:24px;color:var(--text-3);&quot;>Belum ada transaksi shift ini</td></tr>`;return;}
+  el.innerHTML=opShiftTickets.map(t=>`<tr><td class=&quot;mono&quot;>${t.no}</td><td>${t.jenis}</td><td>${t.masuk}</td><td>${t.keluar}</td><td><span class=&quot;badge ${badgeClass(t.status)}&quot;>${t.status}</span></td></tr>`).join('');
+}
+
+function opSimulateScan(mode){
+  const res=document.getElementById('op-scan-result'); res.classList.add('show');
+  if(mode==='valid'){
+    res.innerHTML=`<div class=&quot;result-header&quot;><div class=&quot;result-icon result-valid&quot;><i class=&quot;ti ti-circle-check&quot;></i></div><div><div style=&quot;font-weight:600;color:var(--green);&quot;>TIKET VALID</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Siap validasi keluar</div></div></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>No. Tiket</span><span class=&quot;info-val mono&quot;>20250605-00133</span></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Jenis Kendaraan</span><span class=&quot;info-val&quot;>Motor</span></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Waktu Masuk</span><span class=&quot;info-val&quot;>08:45</span></div><div class=&quot;info-row&quot;><span class=&quot;info-label&quot;>Durasi Parkir</span><span class=&quot;info-val&quot;>2 jam 18 menit</span></div><div class=&quot;tarif-row&quot;><span style=&quot;color:var(--teal);font-size:13px;font-weight:500;&quot;>Total Tarif</span><span style=&quot;font-size:18px;font-weight:700;color:var(--teal);&quot;>Rp 4.000</span></div><button class=&quot;btn btn-teal&quot; style=&quot;width:100%;justify-content:center;padding:11px;&quot; onclick=&quot;confirmExit('op-scan-result')&quot;><i class=&quot;ti ti-check&quot;></i> IZINKAN KELUAR</button>`;
+  } else {
+    res.innerHTML=`<div class=&quot;result-header&quot;><div class=&quot;result-icon result-invalid&quot;><i class=&quot;ti ti-circle-x&quot;></i></div><div><div style=&quot;font-weight:600;color:var(--red);&quot;>TIKET TIDAK VALID</div><div style=&quot;font-size:12px;color:var(--text-3);&quot;>Tiket sudah digunakan atau tidak ditemukan</div></div></div><div style=&quot;color:var(--text-2);font-size:13px;margin-bottom:14px;line-height:1.6;&quot;>Hubungi admin untuk penanganan lebih lanjut.</div><button class=&quot;btn&quot; style=&quot;width:100%;justify-content:center;&quot; onclick=&quot;document.getElementById('op-scan-result').classList.remove('show')&quot;><i class=&quot;ti ti-qrcode&quot;></i> Scan Ulang</button>`;
+  }
+}
+function opManualValidate(){
+  const v=document.getElementById('op-manual-input').value.trim();
+  if(!v){showToast('Masukkan nomor tiket','warn');return;}
+  const found=tickets.find(t=>t.no===v);
+  opSimulateScan(found&amp;&amp;found.status==='AKTIF'?'valid':'invalid');
+}
+</script>
+
+<div class=&quot;mobile-nav&quot; id=&quot;mobile-nav-admin&quot; style=&quot;display:none;&quot;>
+  <button class=&quot;mobile-nav-btn active&quot; onclick=&quot;adminPage('dashboard',this);mobileNavActive('mobile-nav-admin',this)&quot;><i class=&quot;ti ti-layout-dashboard&quot;></i>Dashboard</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;adminPage('tiket',this);mobileNavActive('mobile-nav-admin',this)&quot;><i class=&quot;ti ti-ticket&quot;></i>Tiket</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;adminPage('laporan',this);mobileNavActive('mobile-nav-admin',this)&quot;><i class=&quot;ti ti-chart-bar&quot;></i>Laporan</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;adminPage('petugas',this);mobileNavActive('mobile-nav-admin',this)&quot;><i class=&quot;ti ti-users&quot;></i>Petugas</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;adminPage('tarif',this);mobileNavActive('mobile-nav-admin',this)&quot;><i class=&quot;ti ti-currency-dollar&quot;></i>Tarif</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;adminPage('pengaturan',this);mobileNavActive('mobile-nav-admin',this)&quot;><i class=&quot;ti ti-settings&quot;></i>Setting</button>
+</div>
+
+<div class=&quot;mobile-nav&quot; id=&quot;mobile-nav-operator&quot; style=&quot;display:none;&quot;>
+  <button class=&quot;mobile-nav-btn active&quot; onclick=&quot;opPage('home',this);mobileNavActive('mobile-nav-operator',this)&quot;><i class=&quot;ti ti-home&quot;></i>Beranda</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;opPage('masuk',this);mobileNavActive('mobile-nav-operator',this)&quot;><i class=&quot;ti ti-login&quot;></i>Masuk</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;opPage('keluar',this);mobileNavActive('mobile-nav-operator',this)&quot;><i class=&quot;ti ti-logout&quot;></i>Keluar</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;opPage('riwayat',this);mobileNavActive('mobile-nav-operator',this)&quot;><i class=&quot;ti ti-history&quot;></i>Riwayat</button>
+  <button class=&quot;mobile-nav-btn&quot; onclick=&quot;opPage('tarif-info',this);mobileNavActive('mobile-nav-operator',this)&quot;><i class=&quot;ti ti-info-circle&quot;></i>Tarif</button>
+</div>
+
+<script>
+function mobileNavActive(navId, el) {
+  document.querySelectorAll('#'+navId+' .mobile-nav-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Show/hide mobile navs when screens change
+const origDoLogin = doLogin;
+// Patch screen switching to show mobile nav
+function showMobileNav(role) {
+  document.getElementById('mobile-nav-admin').style.display = role==='admin' ? 'flex' : 'none';
+  document.getElementById('mobile-nav-operator').style.display = role==='operator' ? 'flex' : 'none';
+}
+
+// Intercept screen switches
+document.getElementById('screen-admin').addEventListener('transitionend', function(){});
+
+// Watch for screen changes
+const observer = new MutationObserver(function() {
+  const adminActive = document.getElementById('screen-admin').classList.contains('active');
+  const opActive = document.getElementById('screen-operator').classList.contains('active');
+  if(adminActive) showMobileNav('admin');
+  else if(opActive) showMobileNav('operator');
+  else { 
+    document.getElementById('mobile-nav-admin').style.display='none';
+    document.getElementById('mobile-nav-operator').style.display='none';
+  }
+});
+
+['screen-admin','screen-operator','screen-login'].forEach(id => {
+  observer.observe(document.getElementById(id), {attributes:true, attributeFilter:['class']});
+});
+
+// Put mobile navs inside their screen apps
+document.addEventListener('DOMContentLoaded', function() {});
+// Append navs to app containers now
+document.getElementById('screen-admin').querySelector('.app').appendChild(document.getElementById('mobile-nav-admin'));
+document.getElementById('screen-operator').querySelector('.app').appendChild(document.getElementById('mobile-nav-operator'));
+</script>
+</body>
+</html>
+" scrolling="no" title="HPMS"></iframe>
+        </div>
+
+        <div class="hb"></div>
+        <div class="sheen"></div>
+      </div>
+    </div>
+  </div>
+  <div class="fshadow"></div>
+</div>
+
+<script>
+  function tick(){const n=new Date();document.getElementById('clock').textContent=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');}
+  tick(); setInterval(tick,1000);
+
+  function layout(){
+    const vw=window.innerWidth, vh=window.innerHeight;
+    // Make phone fill height, maintain 9:19.5 ratio
+    let pH = vh * 0.96;
+    let pW = pH * (390/844); // iPhone 14 ratio
+    if(pW > vw * 0.96){ pW = vw*0.96; pH = pW*(844/390); }
+
+    const po = document.getElementById('po');
+    po.style.width = pW+'px';
+    po.style.height = pH+'px';
+
+    // Scale iframe: app is 390px wide, scale to actual phone screen width
+    const iw = document.getElementById('iw');
+    const fr = document.getElementById('fr');
+    // Screen area is ~97% of phone width
+    const screenW = pW * 0.972;
+    const screenH = pH * 0.972;
+    // iframe area is screen minus status bar (8%)
+    const iwW = screenW;
+    const iwH = screenH * 0.92;
+    const scale = iwW / 390;
+    const appH = iwH / scale;
+
+    fr.style.width = '390px';
+    fr.style.height = appH + 'px';
+    fr.style.transform = 'scale('+scale+')';
+  }
+
+  window.addEventListener('resize', layout);
+  document.getElementById('fr').addEventListener('load', layout);
+  layout();
+</script>
+</body>
+</html>
